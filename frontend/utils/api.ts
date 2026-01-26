@@ -31,82 +31,18 @@ export const profileAPI = {
   verifyParentalPin: (profileId: string, pin: string) => api.post(`/profiles/${profileId}/verify-pin`, { pin }),
 };
 
-// Xtream Codes API - Using native fetch for better compatibility
-const XTREAM_BASE_URL = 'http://uwmuyyff.leadernoob.xyz';
-const XTREAM_USERNAME = 'C9FFWBSS';
-const XTREAM_PASSWORD = '13R3ZLL9';
-
-// Helper function using fetch instead of axios
-const fetchXtream = async (endpoint: string, params: any = {}) => {
-  const queryParams = new URLSearchParams({
-    username: XTREAM_USERNAME,
-    password: XTREAM_PASSWORD,
-    ...params
-  }).toString();
-  
-  const url = `${XTREAM_BASE_URL}${endpoint}?${queryParams}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
-      'Accept': '*/*',
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  const data = await response.json();
-  return { data };
-};
-
+// Xtream APIs via backend proxy (to bypass mobile HTTP restrictions)
 export const xtreamAPI = {
-  getInfo: () => fetchXtream('/player_api.php', {}),
-  
-  getLiveCategories: () => fetchXtream('/player_api.php', { action: 'get_live_categories' }),
-  
-  getLiveStreams: (categoryId?: string) => {
-    const params: any = { action: 'get_live_streams' };
-    if (categoryId) params.category_id = categoryId;
-    return fetchXtream('/player_api.php', params);
-  },
-  
-  getVodCategories: () => fetchXtream('/player_api.php', { action: 'get_vod_categories' }),
-  
-  getVodStreams: (categoryId?: string) => {
-    const params: any = { action: 'get_vod_streams' };
-    if (categoryId) params.category_id = categoryId;
-    return fetchXtream('/player_api.php', params);
-  },
-  
-  getSeriesCategories: () => fetchXtream('/player_api.php', { action: 'get_series_categories' }),
-  
-  getSeriesStreams: (categoryId?: string) => {
-    const params: any = { action: 'get_series' };
-    if (categoryId) params.category_id = categoryId;
-    return fetchXtream('/player_api.php', params);
-  },
-  
-  getSeriesInfo: (seriesId: string) => 
-    fetchXtream('/player_api.php', { action: 'get_series_info', series_id: seriesId }),
-  
-  getVodInfo: (vodId: string) => 
-    fetchXtream('/player_api.php', { action: 'get_vod_info', vod_id: vodId }),
-  
-  getEPG: (streamId: string) => 
-    fetchXtream('/player_api.php', { action: 'get_short_epg', stream_id: streamId }),
-  
-  getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => {
-    let url = '';
-    if (streamType === 'live') {
-      url = `${XTREAM_BASE_URL}/live/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
-    } else if (streamType === 'movie') {
-      url = `${XTREAM_BASE_URL}/movie/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
-    } else if (streamType === 'series') {
-      url = `${XTREAM_BASE_URL}/series/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
-    }
-    return Promise.resolve({ data: { url } });
-  },
+  getInfo: () => api.get('/xtream/info'),
+  getLiveCategories: () => api.get('/xtream/live-categories'),
+  getLiveStreams: (categoryId?: string) => api.get('/xtream/live-streams', { params: { category_id: categoryId } }),
+  getVodCategories: () => api.get('/xtream/vod-categories'),
+  getVodStreams: (categoryId?: string) => api.get('/xtream/vod-streams', { params: { category_id: categoryId } }),
+  getSeriesCategories: () => api.get('/xtream/series-categories'),
+  getSeriesStreams: (categoryId?: string) => api.get('/xtream/series-streams', { params: { category_id: categoryId } }),
+  getSeriesInfo: (seriesId: string) => api.get(`/xtream/series-info/${seriesId}`),
+  getVodInfo: (vodId: string) => api.get(`/xtream/vod-info/${vodId}`),
+  getEPG: (streamId: string) => api.get(`/xtream/epg/${streamId}`),
+  getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => 
+    api.get(`/xtream/stream-url/${streamType}/${streamId}`, { params: { extension } }),
 };
