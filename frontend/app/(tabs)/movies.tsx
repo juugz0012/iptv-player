@@ -214,14 +214,14 @@ export default function MoviesScreen() {
           renderItem={renderMovie}
           numColumns={2}
           contentContainerStyle={styles.moviesList}
-          ListEmptyComponent=(
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="film-outline" size={64} color="#666" />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'Aucun film trouvé' : 'Aucun film disponible'}
               </Text>
             </View>
-          )
+          }
         />
       )}
     </View>
