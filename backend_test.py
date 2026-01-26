@@ -71,6 +71,7 @@ def make_request(method, endpoint, data=None, params=None):
         
         return response
     except requests.exceptions.RequestException as e:
+        print(f"   Request error for {method} {url}: {e}")
         return None
 
 # Global variables for test data
