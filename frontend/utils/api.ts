@@ -31,39 +31,135 @@ export const profileAPI = {
   verifyParentalPin: (profileId: string, pin: string) => api.post(`/profiles/${profileId}/verify-pin`, { pin }),
 };
 
-// Xtream Codes Direct API - calls directly from mobile device
+// Xtream Codes M3U API - More reliable than player_api.php
 const XTREAM_BASE_URL = 'http://uwmuyyff.leadernoob.xyz';
 const XTREAM_USERNAME = 'C9FFWBSS';
 const XTREAM_PASSWORD = '13R3ZLL9';
+
+// Helper function to parse M3U playlist
+const parseM3U = (m3uContent: string) => {
+  const lines = m3uContent.split('\n');
+  const channels: any[] = [];
+  let currentChannel: any = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (line.startsWith('#EXTINF:')) {
+      // Parse channel info
+      currentChannel = {};
+      
+      // Extract tvg-id, tvg-name, tvg-logo, group-title
+      const tvgIdMatch = line.match(/tvg-id="([^"]*)"/);
+      const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
+      const tvgLogoMatch = line.match(/tvg-logo="([^"]*)"/);
+      const groupTitleMatch = line.match(/group-title="([^"]*)"/);
+      
+      if (tvgIdMatch) currentChannel.stream_id = tvgIdMatch[1];
+      if (tvgNameMatch) currentChannel.name = tvgNameMatch[1];
+      if (tvgLogoMatch) currentChannel.stream_icon = tvgLogoMatch[1];
+      if (groupTitleMatch) currentChannel.category_name = groupTitleMatch[1];
+      
+      // Extract name from end of line if not found
+      if (!currentChannel.name) {
+        const nameMatch = line.match(/,(.+)$/);
+        if (nameMatch) currentChannel.name = nameMatch[1].trim();
+      }
+    } else if (line && !line.startsWith('#') && currentChannel) {
+      // This is the stream URL
+      currentChannel.stream_url = line;
+      
+      // Extract stream_id from URL if not found
+      if (!currentChannel.stream_id) {
+        const idMatch = line.match(/\/(\d+)\./);
+        if (idMatch) currentChannel.stream_id = parseInt(idMatch[1]);
+      }
+      
+      channels.push(currentChannel);
+      currentChannel = null;
+    }
+  }
+  
+  return channels;
+};
 
 const xtreamDirect = axios.create({
   baseURL: XTREAM_BASE_URL,
   timeout: 30000,
   headers: {
-    'User-Agent': 'Lavf/58.76.100',
+    'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
     'Accept': '*/*',
-    'Connection': 'keep-alive',
   }
 });
 
 export const xtreamAPI = {
+  // Get M3U playlist and parse it
+  getLiveStreams: async (categoryId?: string) => {
+    try {
+      const response = await xtreamDirect.get('/get.php', {
+        params: {
+          username: XTREAM_USERNAME,
+          password: XTREAM_PASSWORD,
+          type: 'm3u_plus',
+          output: 'ts'
+        }
+      });
+      
+      const channels = parseM3U(response.data);
+      
+      // Filter by category if specified
+      if (categoryId && categoryId !== '') {
+        return { data: channels.filter((ch: any) => ch.category_name === categoryId) };
+      }
+      
+      return { data: channels };
+    } catch (error) {
+      console.error('Error fetching M3U:', error);
+      throw error;
+    }
+  },
+  
+  // Get unique categories from M3U
+  getLiveCategories: async () => {
+    try {
+      const response = await xtreamDirect.get('/get.php', {
+        params: {
+          username: XTREAM_USERNAME,
+          password: XTREAM_PASSWORD,
+          type: 'm3u_plus',
+          output: 'ts'
+        }
+      });
+      
+      const channels = parseM3U(response.data);
+      
+      // Extract unique categories
+      const categoriesMap = new Map();
+      channels.forEach((ch: any) => {
+        if (ch.category_name && !categoriesMap.has(ch.category_name)) {
+          categoriesMap.set(ch.category_name, {
+            category_id: ch.category_name,
+            category_name: ch.category_name,
+            parent_id: 0
+          });
+        }
+      });
+      
+      return { data: Array.from(categoriesMap.values()) };
+    } catch (error) {
+      console.error('Error fetching categories from M3U:', error);
+      throw error;
+    }
+  },
+  
   getInfo: () => xtreamDirect.get('/player_api.php', { 
     params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD } 
   }),
-  getLiveCategories: () => xtreamDirect.get('/player_api.php', { 
-    params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_live_categories' } 
-  }),
-  getLiveStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_live_streams',
-      ...(categoryId && { category_id: categoryId })
-    } 
-  }),
+  
   getVodCategories: () => xtreamDirect.get('/player_api.php', { 
     params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_vod_categories' } 
   }),
+  
   getVodStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
     params: { 
       username: XTREAM_USERNAME, 
@@ -72,9 +168,11 @@ export const xtreamAPI = {
       ...(categoryId && { category_id: categoryId })
     } 
   }),
+  
   getSeriesCategories: () => xtreamDirect.get('/player_api.php', { 
     params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_series_categories' } 
   }),
+  
   getSeriesStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
     params: { 
       username: XTREAM_USERNAME, 
@@ -83,6 +181,7 @@ export const xtreamAPI = {
       ...(categoryId && { category_id: categoryId })
     } 
   }),
+  
   getSeriesInfo: (seriesId: string) => xtreamDirect.get('/player_api.php', { 
     params: { 
       username: XTREAM_USERNAME, 
@@ -91,6 +190,7 @@ export const xtreamAPI = {
       series_id: seriesId
     } 
   }),
+  
   getVodInfo: (vodId: string) => xtreamDirect.get('/player_api.php', { 
     params: { 
       username: XTREAM_USERNAME, 
@@ -99,6 +199,7 @@ export const xtreamAPI = {
       vod_id: vodId
     } 
   }),
+  
   getEPG: (streamId: string) => xtreamDirect.get('/player_api.php', { 
     params: { 
       username: XTREAM_USERNAME, 
@@ -107,6 +208,7 @@ export const xtreamAPI = {
       stream_id: streamId
     } 
   }),
+  
   getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => {
     let url = '';
     if (streamType === 'live') {
