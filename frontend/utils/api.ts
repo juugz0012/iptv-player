@@ -32,7 +32,7 @@ export const profileAPI = {
 };
 
 // Xtream Codes Direct API (bypassing backend to avoid datacenter blocks)
-const XTREAM_BASE_URL = 'http://uvihkgki.leadernoob.xyz';
+const XTREAM_BASE_URL = 'http://uvihkgki.meza.in';
 const XTREAM_USERNAME = 'GYNRNT4N';
 const XTREAM_PASSWORD = 'WL29K25J';
 
