@@ -158,8 +158,9 @@ async def list_user_codes_admin():
     """Admin: List all user codes"""
     codes = await db.user_codes.find().sort("created_at", -1).to_list(1000)
     
-    # Add profile count for each code
+    # Add profile count for each code and remove _id
     for code_doc in codes:
+        code_doc.pop("_id", None)
         profile_count = await db.profiles.count_documents({"user_code": code_doc["code"]})
         code_doc["profile_count"] = profile_count
     
