@@ -31,78 +31,24 @@ export const profileAPI = {
   verifyParentalPin: (profileId: string, pin: string) => api.post(`/profiles/${profileId}/verify-pin`, { pin }),
 };
 
-// Xtream Codes Direct API (bypassing backend to avoid datacenter blocks)
-const XTREAM_BASE_URL = 'http://uwmuyyff.leadernoob.xyz';
-const XTREAM_USERNAME = 'C9FFWBSS';
-const XTREAM_PASSWORD = '13R3ZLL9';
-
-const xtreamDirect = axios.create({
-  baseURL: XTREAM_BASE_URL,
-  timeout: 30000,
-});
-
+// Xtream APIs via backend
 export const xtreamAPI = {
-  getInfo: () => xtreamDirect.get('/player_api.php', { 
-    params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD } 
-  }),
-  getLiveCategories: () => xtreamDirect.get('/player_api.php', { 
-    params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_live_categories' } 
-  }),
-  getLiveStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_live_streams',
-      ...(categoryId && { category_id: categoryId })
-    } 
-  }),
-  getVodCategories: () => xtreamDirect.get('/player_api.php', { 
-    params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_vod_categories' } 
-  }),
-  getVodStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_vod_streams',
-      ...(categoryId && { category_id: categoryId })
-    } 
-  }),
-  getSeriesCategories: () => xtreamDirect.get('/player_api.php', { 
-    params: { username: XTREAM_USERNAME, password: XTREAM_PASSWORD, action: 'get_series_categories' } 
-  }),
-  getSeriesStreams: (categoryId?: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_series',
-      ...(categoryId && { category_id: categoryId })
-    } 
-  }),
-  getSeriesInfo: (seriesId: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_series_info',
-      series_id: seriesId
-    } 
-  }),
-  getVodInfo: (vodId: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_vod_info',
-      vod_id: vodId
-    } 
-  }),
-  getEPG: (streamId: string) => xtreamDirect.get('/player_api.php', { 
-    params: { 
-      username: XTREAM_USERNAME, 
-      password: XTREAM_PASSWORD, 
-      action: 'get_short_epg',
-      stream_id: streamId
-    } 
-  }),
+  getInfo: () => api.get('/xtream/info'),
+  getLiveCategories: () => api.get('/xtream/live-categories'),
+  getLiveStreams: (categoryId?: string) => api.get('/xtream/live-streams', { params: { category_id: categoryId } }),
+  getVodCategories: () => api.get('/xtream/vod-categories'),
+  getVodStreams: (categoryId?: string) => api.get('/xtream/vod-streams', { params: { category_id: categoryId } }),
+  getSeriesCategories: () => api.get('/xtream/series-categories'),
+  getSeriesStreams: (categoryId?: string) => api.get('/xtream/series-streams', { params: { category_id: categoryId } }),
+  getSeriesInfo: (seriesId: string) => api.get(`/xtream/series-info/${seriesId}`),
+  getVodInfo: (vodId: string) => api.get(`/xtream/vod-info/${vodId}`),
+  getEPG: (streamId: string) => api.get(`/xtream/epg/${streamId}`),
   getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => {
+    // Generate direct stream URLs for playback
+    const XTREAM_BASE_URL = 'http://uwmuyyff.leadernoob.xyz';
+    const XTREAM_USERNAME = 'C9FFWBSS';
+    const XTREAM_PASSWORD = '13R3ZLL9';
+    
     let url = '';
     if (streamType === 'live') {
       url = `${XTREAM_BASE_URL}/live/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
