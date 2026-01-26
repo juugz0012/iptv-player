@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expo QR Code - IPTV Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #141414 0%, #2a2a2a 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: #1e1e1e;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #E50914;
+            margin-bottom: 10px;
+        }
+        #qrcode {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: inline-block;
+        }
+        .info {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .code {
+            background: #E50914;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin: 20px 0;
+        }
+        .url {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 IPTV Player</h1>
+        <p style="font-size: 18px; color: #888;">Scannez ce QR Code avec Expo Go</p>
+        
+        <div id="qrcode"></div>
+        
+        <div class="info">
+            <p><strong>📱 URL Expo Go:</strong></p>
+            <div class="url">exp://telecast-hub-12.preview.emergentagent.com</div>
+            
+            <p style="margin-top: 20px;"><strong>🎫 Code Utilisateur:</strong></p>
+            <div class="code">6VCSU76F</div>
+            
+            <p style="margin-top: 20px;"><strong>📋 Instructions:</strong></p>
+            <ol style="text-align: left;">
+                <li>Installez <strong>Expo Go</strong> sur votre mobile</li>
+                <li>Scannez le QR code ci-dessus</li>
+                <li>Entrez le code: <strong>6VCSU76F</strong></li>
+                <li>Créez votre profil et profitez !</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        QRCode.toCanvas(
+            document.getElementById('qrcode'),
+            'exp://telecast-hub-12.preview.emergentagent.com',
+            {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }
+        );
+    </script>
+</body>
+</html>
