@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Player - Expo Go</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #141414 0%, #2a2a2a 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #1e1e1e;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #E50914;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .qr-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            display: inline-block;
+        }
+        
+        #qrcode {
+            display: block;
+        }
+        
+        .expo-button {
+            display: inline-block;
+            background: #000;
+            color: white;
+            padding: 18px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            border: 2px solid #000;
+        }
+        
+        .expo-button:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        .info-box {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .code-display {
+            background: #E50914;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        
+        .url-display {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            color: #4CAF50;
+            margin: 15px 0;
+        }
+        
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .step::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .warning {
+            background: #ff9800;
+            color: black;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        
+        .stores {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .store-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .store-link:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .code-display {
+                font-size: 22px;
+                letter-spacing: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 IPTV Player</h1>
+        <p class="subtitle">Scannez le QR code ou ouvrez dans Expo Go</p>
+        
+        <div class="qr-container">
+            <canvas id="qrcode"></canvas>
+        </div>
+        
+        <a href="exp://telecast-hub-12.preview.emergentagent.com" class="expo-button">
+            📱 Ouvrir dans Expo Go
+        </a>
+        
+        <div class="warning">
+            ⚠️ Assurez-vous d'avoir installé Expo Go avant de cliquer
+        </div>
+        
+        <div class="stores">
+            <a href="https://play.google.com/store/apps/details?id=host.exp.exponent" class="store-link" target="_blank">
+                📥 Android - Play Store
+            </a>
+            <a href="https://apps.apple.com/app/expo-go/id982107779" class="store-link" target="_blank">
+                📥 iOS - App Store
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <h3 style="color: #E50914; margin-bottom: 15px;">📋 Informations</h3>
+            
+            <p><strong>URL Expo Go:</strong></p>
+            <div class="url-display">exp://telecast-hub-12.preview.emergentagent.com</div>
+            
+            <p><strong>Code Utilisateur:</strong></p>
+            <div class="code-display">6VCSU76F</div>
+            
+            <h3 style="color: #E50914; margin: 25px 0 15px 0;">📝 Instructions</h3>
+            
+            <div class="step">Installez Expo Go depuis votre store</div>
+            <div class="step">Scannez le QR code OU cliquez sur le bouton ci-dessus</div>
+            <div class="step">Attendez le chargement de l'application</div>
+            <div class="step">Entrez le code: <strong>6VCSU76F</strong></div>
+            <div class="step">Créez votre profil et profitez !</div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        // Générer le QR code
+        const canvas = document.getElementById('qrcode');
+        QRCode.toCanvas(canvas, 'exp://telecast-hub-12.preview.emergentagent.com', {
+            width: 280,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function (error) {
+            if (error) console.error(error);
+            console.log('QR code généré avec succès !');
+        });
+    </script>
+</body>
+</html>
