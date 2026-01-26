@@ -243,14 +243,14 @@ export default function LiveTVScreen() {
           keyExtractor={(item) => item[0]}
           renderItem={renderStream}
           contentContainerStyle={styles.streamsList}
-          ListEmptyComponent=(
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="tv-outline" size={64} color="#666" />
               <Text style={styles.emptyText}>
                 {searchQuery ? 'Aucune chaîne trouvée' : 'Aucune chaîne disponible'}
               </Text>
             </View>
-          )
+          }
         />
       )}
     </View>
