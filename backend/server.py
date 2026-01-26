@@ -322,25 +322,89 @@ async def get_live_categories():
 
 @api_router.get("/xtream/live-streams")
 async def get_live_streams(category_id: Optional[str] = None):
-    """Get live TV streams"""
+    """Get live TV streams from M3U playlist"""
     config = await get_xtream_config()
     
-    url = f"{config['dns_url']}/player_api.php"
+    # Use M3U endpoint instead of player_api.php for better reliability
+    url = f"{config['dns_url']}/get.php"
     params = {
         "username": config["username"],
         "password": config["password"],
-        "action": "get_live_streams"
+        "type": "m3u_plus",
+        "output": "mpegts"
     }
     
-    if category_id:
-        params["category_id"] = category_id
+    headers = {
+        'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+    }
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, headers=headers, follow_redirects=True) as client:
         try:
             response = await client.get(url, params=params)
-            return response.json()
+            response.raise_for_status()
+            
+            # Parse M3U playlist
+            m3u_content = response.text
+            channels = []
+            current_channel = None
+            
+            for line in m3u_content.split('\n'):
+                line = line.strip()
+                
+                if line.startswith('#EXTINF:'):
+                    # Parse channel info
+                    current_channel = {}
+                    
+                    # Extract tvg-id, tvg-name, tvg-logo, group-title
+                    import re
+                    tvg_id_match = re.search(r'tvg-id="([^"]*)"', line)
+                    tvg_name_match = re.search(r'tvg-name="([^"]*)"', line)
+                    tvg_logo_match = re.search(r'tvg-logo="([^"]*)"', line)
+                    group_title_match = re.search(r'group-title="([^"]*)"', line)
+                    
+                    if tvg_id_match:
+                        current_channel['stream_id'] = tvg_id_match.group(1)
+                    if tvg_name_match:
+                        current_channel['name'] = tvg_name_match.group(1)
+                    if tvg_logo_match:
+                        current_channel['stream_icon'] = tvg_logo_match.group(1)
+                    if group_title_match:
+                        current_channel['category_id'] = group_title_match.group(1)
+                    
+                    # Extract name from end of line if not found
+                    if 'name' not in current_channel:
+                        name_match = re.search(r',(.+)$', line)
+                        if name_match:
+                            current_channel['name'] = name_match.group(1).strip()
+                
+                elif line and not line.startswith('#') and current_channel:
+                    # This is the stream URL
+                    current_channel['stream_url'] = line
+                    
+                    # Extract stream_id from URL if not found
+                    if 'stream_id' not in current_channel:
+                        import re
+                        id_match = re.search(r'/(\d+)\.', line)
+                        if id_match:
+                            current_channel['stream_id'] = int(id_match.group(1))
+                    
+                    # Set defaults
+                    if 'stream_id' not in current_channel:
+                        current_channel['stream_id'] = len(channels) + 1
+                    if 'category_id' not in current_channel:
+                        current_channel['category_id'] = ''
+                    
+                    channels.append(current_channel)
+                    current_channel = None
+            
+            # Filter by category if specified
+            if category_id:
+                channels = [ch for ch in channels if ch.get('category_id') == category_id]
+            
+            return channels
+            
         except Exception as e:
-            logger.error(f"Error fetching live streams: {str(e)}")
+            logger.error(f"Error fetching live streams from M3U: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error connecting to IPTV service: {str(e)}")
 
 @api_router.get("/xtream/vod-categories")
