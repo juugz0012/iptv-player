@@ -401,7 +401,7 @@ if generated_user_code:
         else:
             log_test(test_name, "FAIL", f"Wrong error message: {data.get('detail', 'No detail')}")
     elif response:
-        log_test(test_name, "FAIL", f"Expected 400 error, got: {response.status_code}")
+        log_test(test_name, "FAIL", f"Expected 400 error, got: {response.status_code}, Response: {response.text}")
     else:
         log_test(test_name, "FAIL", "Request failed - connection error")
 else:
