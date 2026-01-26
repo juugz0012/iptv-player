@@ -1,219 +1,224 @@
 diff --git a/model.patch b/model.patch
-index eff0d77..e69de29 100644
+index 7b5af28..e69de29 100644
 --- a/model.patch
 +++ b/model.patch
-@@ -1,13 +0,0 @@
--diff --git a/frontend/app/(tabs)/series.tsx b/frontend/app/(tabs)/series.tsx
--index 538ffa9..ac527c3 100644
----- a/frontend/app/(tabs)/series.tsx
--+++ b/frontend/app/(tabs)/series.tsx
--@@ -212,7 +212,7 @@ export default function SeriesScreen() {
--           renderItem={renderSeries}
--           numColumns={2}
--           contentContainerStyle={styles.seriesList}
---          ListEmptyComponent=(
--+          ListEmptyComponent={
--             <View style={styles.emptyContainer}>
--               <Ionicons name="list-outline" size={64} color="#666" />
--               <Text style={styles.emptyText}>
-diff --git a/simple_test.py b/simple_test.py
-new file mode 100644
-index 0000000..fa526db
---- /dev/null
-+++ b/simple_test.py
-@@ -0,0 +1,76 @@
-+#!/usr/bin/env python3
-+import requests
-+import json
-+
-+BASE_URL = "https://telecast-hub-12.preview.emergentagent.com/api"
-+
-+# Test the specific failing cases
-+print("Testing specific failing cases...")
-+
-+# Test 1: Invalid code verification
-+print("\n1. Testing invalid code verification:")
-+try:
-+    response = requests.post(f"{BASE_URL}/auth/verify-code?code=INVALID1", timeout=5)
-+    print(f"   Status: {response.status_code}")
-+    print(f"   Response: {response.json()}")
-+    if response.status_code == 404:
-+        print("   ✅ PASS - Correctly rejected invalid code")
-+    else:
-+        print("   ❌ FAIL - Wrong status code")
-+except Exception as e:
-+    print(f"   ❌ FAIL - Exception: {e}")
-+
-+# Test 2: Create profile with invalid code
-+print("\n2. Testing profile creation with invalid code:")
-+try:
-+    response = requests.post(f"{BASE_URL}/profiles/INVALID1", 
-+                           json={"name": "Test", "is_child": False}, 
-+                           timeout=5)
-+    print(f"   Status: {response.status_code}")
-+    print(f"   Response: {response.json()}")
-+    if response.status_code == 404:
-+        print("   ✅ PASS - Correctly rejected invalid code")
-+    else:
-+        print("   ❌ FAIL - Wrong status code")
-+except Exception as e:
-+    print(f"   ❌ FAIL - Exception: {e}")
-+
-+# Test 3: Generate a code and test profile limit
-+print("\n3. Testing profile limit validation:")
-+try:
-+    # Generate a user code
-+    response = requests.post(f"{BASE_URL}/admin/user-codes", 
-+                           json={"max_profiles": 5}, 
-+                           timeout=5)
-+    if response.status_code == 200:
-+        user_code = response.json()["code"]
-+        print(f"   Generated code: {user_code}")
-+        
-+        # Create 5 profiles
-+        for i in range(5):
-+            profile_response = requests.post(f"{BASE_URL}/profiles/{user_code}", 
-+                                           json={"name": f"Profile {i+1}", "is_child": False}, 
-+                                           timeout=5)
-+            if profile_response.status_code == 200:
-+                print(f"   ✅ Created profile {i+1}")
-+            else:
-+                print(f"   ❌ Failed to create profile {i+1}: {profile_response.status_code}")
-+        
-+        # Try to create 6th profile (should fail)
-+        limit_response = requests.post(f"{BASE_URL}/profiles/{user_code}", 
-+                                     json={"name": "Profile 6 - Should Fail", "is_child": False}, 
-+                                     timeout=5)
-+        print(f"   6th profile attempt - Status: {limit_response.status_code}")
-+        print(f"   6th profile attempt - Response: {limit_response.json()}")
-+        
-+        if limit_response.status_code == 400:
-+            print("   ✅ PASS - Correctly enforced profile limit")
-+        else:
-+            print("   ❌ FAIL - Profile limit not enforced")
-+    else:
-+        print(f"   ❌ Failed to generate user code: {response.status_code}")
-+        
-+except Exception as e:
-+    print(f"   ❌ FAIL - Exception: {e}")
-+
-+print("\nTest completed!")
-\ No newline at end of file
-diff --git a/test_result.md b/test_result.md
-index 187cba4..831bd28 100644
---- a/test_result.md
-+++ b/test_result.md
-@@ -100,4 +100,110 @@
- 
- #====================================================================================================
- # Testing Data - Main Agent and testing sub agent both should log testing data below this section
--#====================================================================================================
-\ No newline at end of file
-+#====================================================================================================
-+
-+user_problem_statement: "Test complet de l'application IPTV Player Backend - Comprehensive testing of all backend functionality including admin configuration, user codes management, authentication, profile management, stream URL generation, and validation limits."
-+
-+backend:
-+  - task: "Admin Xtream Configuration Management"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "POST /api/admin/xtream-config and GET /api/admin/xtream-config both working correctly. Configuration is saved properly and retrieved without exposing password for security."
-+
-+  - task: "Admin User Codes Management"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "POST /api/admin/user-codes generates 8-character uppercase alphanumeric codes correctly. GET /api/admin/user-codes lists all codes with profile counts. Code format validation working properly."
-+
-+  - task: "User Authentication System"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "POST /api/auth/verify-code correctly validates user codes. Valid codes return proper response with code and max_profiles. Invalid codes return 404 with appropriate error message."
-+
-+  - task: "Profile Management System"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "All profile operations working correctly: POST /api/profiles/{code} creates adult/child profiles, GET /api/profiles/{code} lists profiles, PUT /api/profiles/{profile_id}/parental-pin updates PIN, POST /api/profiles/{profile_id}/verify-pin validates PIN correctly, DELETE /api/profiles/{profile_id} removes profiles."
-+
-+  - task: "Stream URL Generation"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "GET /api/xtream/stream-url/{stream_type}/{stream_id} working for all stream types (live, movie, series). URLs generated with correct format including username, password, and stream ID."
-+
-+  - task: "Validation and Limits Enforcement"
-+    implemented: true
-+    working: true
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "high"
-+    needs_retesting: false
-+    status_history:
-+        - working: true
-+          agent: "testing"
-+          comment: "Profile limit validation working correctly - prevents creation of 6th profile when max is 5, returns 400 with 'Maximum profiles limit reached'. Invalid user code validation working - returns 404 for non-existent codes."
-+
-+  - task: "Xtream Proxy Endpoints"
-+    implemented: true
-+    working: false
-+    file: "/app/backend/server.py"
-+    stuck_count: 0
-+    priority: "low"
-+    needs_retesting: false
-+    status_history:
-+        - working: false
-+          agent: "testing"
-+          comment: "Xtream proxy endpoints (/api/xtream/live-categories, /api/xtream/live-streams, etc.) failing as expected due to IPTV server blocking connections (anti-bot protection). This is normal and expected behavior. The endpoints are implemented correctly but external service blocks requests."
-+
-+frontend:
-+  # No frontend testing performed as per instructions
-+
-+metadata:
-+  created_by: "testing_agent"
-+  version: "1.0"
-+  test_sequence: 1
-+  run_ui: false
-+
-+test_plan:
-+  current_focus: []
-+  stuck_tasks: []
-+  test_all: false
-+  test_priority: "high_first"
-+
-+agent_communication:
-+    - agent: "testing"
-+      message: "Comprehensive backend testing completed. All core functionality working correctly. 15/18 tests passed (83.3% success rate excluding expected failures). Xtream proxy endpoints fail as expected due to external server blocking. Backend API is fully functional for all user-facing features."
-\ No newline at end of file
+@@ -1,219 +0,0 @@
+-diff --git a/model.patch b/model.patch
+-index eff0d77..e69de29 100644
+---- a/model.patch
+-+++ b/model.patch
+-@@ -1,13 +0,0 @@
+--diff --git a/frontend/app/(tabs)/series.tsx b/frontend/app/(tabs)/series.tsx
+--index 538ffa9..ac527c3 100644
+----- a/frontend/app/(tabs)/series.tsx
+--+++ b/frontend/app/(tabs)/series.tsx
+--@@ -212,7 +212,7 @@ export default function SeriesScreen() {
+--           renderItem={renderSeries}
+--           numColumns={2}
+--           contentContainerStyle={styles.seriesList}
+---          ListEmptyComponent=(
+--+          ListEmptyComponent={
+--             <View style={styles.emptyContainer}>
+--               <Ionicons name="list-outline" size={64} color="#666" />
+--               <Text style={styles.emptyText}>
+-diff --git a/simple_test.py b/simple_test.py
+-new file mode 100644
+-index 0000000..fa526db
+---- /dev/null
+-+++ b/simple_test.py
+-@@ -0,0 +1,76 @@
+-+#!/usr/bin/env python3
+-+import requests
+-+import json
+-+
+-+BASE_URL = "https://telecast-hub-12.preview.emergentagent.com/api"
+-+
+-+# Test the specific failing cases
+-+print("Testing specific failing cases...")
+-+
+-+# Test 1: Invalid code verification
+-+print("\n1. Testing invalid code verification:")
+-+try:
+-+    response = requests.post(f"{BASE_URL}/auth/verify-code?code=INVALID1", timeout=5)
+-+    print(f"   Status: {response.status_code}")
+-+    print(f"   Response: {response.json()}")
+-+    if response.status_code == 404:
+-+        print("   ✅ PASS - Correctly rejected invalid code")
+-+    else:
+-+        print("   ❌ FAIL - Wrong status code")
+-+except Exception as e:
+-+    print(f"   ❌ FAIL - Exception: {e}")
+-+
+-+# Test 2: Create profile with invalid code
+-+print("\n2. Testing profile creation with invalid code:")
+-+try:
+-+    response = requests.post(f"{BASE_URL}/profiles/INVALID1", 
+-+                           json={"name": "Test", "is_child": False}, 
+-+                           timeout=5)
+-+    print(f"   Status: {response.status_code}")
+-+    print(f"   Response: {response.json()}")
+-+    if response.status_code == 404:
+-+        print("   ✅ PASS - Correctly rejected invalid code")
+-+    else:
+-+        print("   ❌ FAIL - Wrong status code")
+-+except Exception as e:
+-+    print(f"   ❌ FAIL - Exception: {e}")
+-+
+-+# Test 3: Generate a code and test profile limit
+-+print("\n3. Testing profile limit validation:")
+-+try:
+-+    # Generate a user code
+-+    response = requests.post(f"{BASE_URL}/admin/user-codes", 
+-+                           json={"max_profiles": 5}, 
+-+                           timeout=5)
+-+    if response.status_code == 200:
+-+        user_code = response.json()["code"]
+-+        print(f"   Generated code: {user_code}")
+-+        
+-+        # Create 5 profiles
+-+        for i in range(5):
+-+            profile_response = requests.post(f"{BASE_URL}/profiles/{user_code}", 
+-+                                           json={"name": f"Profile {i+1}", "is_child": False}, 
+-+                                           timeout=5)
+-+            if profile_response.status_code == 200:
+-+                print(f"   ✅ Created profile {i+1}")
+-+            else:
+-+                print(f"   ❌ Failed to create profile {i+1}: {profile_response.status_code}")
+-+        
+-+        # Try to create 6th profile (should fail)
+-+        limit_response = requests.post(f"{BASE_URL}/profiles/{user_code}", 
+-+                                     json={"name": "Profile 6 - Should Fail", "is_child": False}, 
+-+                                     timeout=5)
+-+        print(f"   6th profile attempt - Status: {limit_response.status_code}")
+-+        print(f"   6th profile attempt - Response: {limit_response.json()}")
+-+        
+-+        if limit_response.status_code == 400:
+-+            print("   ✅ PASS - Correctly enforced profile limit")
+-+        else:
+-+            print("   ❌ FAIL - Profile limit not enforced")
+-+    else:
+-+        print(f"   ❌ Failed to generate user code: {response.status_code}")
+-+        
+-+except Exception as e:
+-+    print(f"   ❌ FAIL - Exception: {e}")
+-+
+-+print("\nTest completed!")
+-\ No newline at end of file
+-diff --git a/test_result.md b/test_result.md
+-index 187cba4..831bd28 100644
+---- a/test_result.md
+-+++ b/test_result.md
+-@@ -100,4 +100,110 @@
+- 
+- #====================================================================================================
+- # Testing Data - Main Agent and testing sub agent both should log testing data below this section
+--#====================================================================================================
+-\ No newline at end of file
+-+#====================================================================================================
+-+
+-+user_problem_statement: "Test complet de l'application IPTV Player Backend - Comprehensive testing of all backend functionality including admin configuration, user codes management, authentication, profile management, stream URL generation, and validation limits."
+-+
+-+backend:
+-+  - task: "Admin Xtream Configuration Management"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "POST /api/admin/xtream-config and GET /api/admin/xtream-config both working correctly. Configuration is saved properly and retrieved without exposing password for security."
+-+
+-+  - task: "Admin User Codes Management"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "POST /api/admin/user-codes generates 8-character uppercase alphanumeric codes correctly. GET /api/admin/user-codes lists all codes with profile counts. Code format validation working properly."
+-+
+-+  - task: "User Authentication System"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "POST /api/auth/verify-code correctly validates user codes. Valid codes return proper response with code and max_profiles. Invalid codes return 404 with appropriate error message."
+-+
+-+  - task: "Profile Management System"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "All profile operations working correctly: POST /api/profiles/{code} creates adult/child profiles, GET /api/profiles/{code} lists profiles, PUT /api/profiles/{profile_id}/parental-pin updates PIN, POST /api/profiles/{profile_id}/verify-pin validates PIN correctly, DELETE /api/profiles/{profile_id} removes profiles."
+-+
+-+  - task: "Stream URL Generation"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "GET /api/xtream/stream-url/{stream_type}/{stream_id} working for all stream types (live, movie, series). URLs generated with correct format including username, password, and stream ID."
+-+
+-+  - task: "Validation and Limits Enforcement"
+-+    implemented: true
+-+    working: true
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "high"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: true
+-+          agent: "testing"
+-+          comment: "Profile limit validation working correctly - prevents creation of 6th profile when max is 5, returns 400 with 'Maximum profiles limit reached'. Invalid user code validation working - returns 404 for non-existent codes."
+-+
+-+  - task: "Xtream Proxy Endpoints"
+-+    implemented: true
+-+    working: false
+-+    file: "/app/backend/server.py"
+-+    stuck_count: 0
+-+    priority: "low"
+-+    needs_retesting: false
+-+    status_history:
+-+        - working: false
+-+          agent: "testing"
+-+          comment: "Xtream proxy endpoints (/api/xtream/live-categories, /api/xtream/live-streams, etc.) failing as expected due to IPTV server blocking connections (anti-bot protection). This is normal and expected behavior. The endpoints are implemented correctly but external service blocks requests."
+-+
+-+frontend:
+-+  # No frontend testing performed as per instructions
+-+
+-+metadata:
+-+  created_by: "testing_agent"
+-+  version: "1.0"
+-+  test_sequence: 1
+-+  run_ui: false
+-+
+-+test_plan:
+-+  current_focus: []
+-+  stuck_tasks: []
+-+  test_all: false
+-+  test_priority: "high_first"
+-+
+-+agent_communication:
+-+    - agent: "testing"
+-+      message: "Comprehensive backend testing completed. All core functionality working correctly. 15/18 tests passed (83.3% success rate excluding expected failures). Xtream proxy endpoints fail as expected due to external server blocking. Backend API is fully functional for all user-facing features."
+-\ No newline at end of file
