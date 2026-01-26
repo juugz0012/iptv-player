@@ -81,17 +81,29 @@ export default function LiveTVScreen() {
   const loadStreams = async (categoryId?: string) => {
     try {
       setLoadingStreams(true);
+      console.log('🔍 Tentative de chargement des chaînes...');
+      console.log('📡 URL:', 'http://uwmuyyff.leadernoob.xyz/player_api.php');
+      console.log('👤 Username:', 'C9FFWBSS');
+      console.log('🔑 Password:', '13R3ZLL9');
+      
       const response = await xtreamAPI.getLiveStreams(categoryId);
       const streamData = response.data || [];
       
+      console.log('✅ Succès! Nombre de chaînes:', streamData.length);
       setStreams(streamData);
       setFilteredStreams(streamData);
       setSelectedCategory(categoryId || null);
     } catch (error: any) {
-      console.error('Error loading streams:', error);
+      console.error('❌ Erreur complète:', error);
+      console.error('📊 Error message:', error.message);
+      console.error('📡 Response status:', error.response?.status);
+      console.error('📄 Response data:', error.response?.data);
+      console.error('🔧 Request config:', error.config?.url);
+      
       Alert.alert(
-        'Erreur',
-        error.response?.data?.detail || 'Impossible de charger les chaînes'
+        'Erreur de connexion',
+        `Détails: ${error.message}\n\nStatus: ${error.response?.status || 'N/A'}\n\nCeci est une erreur de connexion au serveur IPTV. Vérifiez votre connexion internet.`,
+        [{ text: 'OK' }]
       );
     } finally {
       setLoadingStreams(false);
