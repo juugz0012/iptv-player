@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Profile {
@@ -13,13 +13,13 @@ interface AuthContextType {
   userCode: string | null;
   currentProfile: Profile | null;
   setUserCode: (code: string) => Promise<void>;
-  setCurrentProfile: (profile: Profile | null) => void;
+  setCurrentProfile: (profile: Profile | null) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [userCode, setUserCodeState] = useState<string | null>(null);
   const [currentProfile, setCurrentProfileState] = useState<Profile | null>(null);
 
