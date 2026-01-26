@@ -203,6 +203,11 @@ async def get_profiles(user_code: str):
         raise HTTPException(status_code=404, detail="Invalid user code")
     
     profiles = await db.profiles.find({"user_code": user_code}).to_list(100)
+    
+    # Remove MongoDB's _id field from each profile
+    for profile in profiles:
+        profile.pop("_id", None)
+    
     return profiles
 
 @api_router.post("/profiles/{user_code}")
