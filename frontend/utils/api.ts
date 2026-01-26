@@ -113,27 +113,45 @@ export const xtreamAPI = {
       
       const url = `${XTREAM_BASE_URL}/get.php?username=${XTREAM_USERNAME}&password=${XTREAM_PASSWORD}&type=m3u_plus&output=mpegts`;
       
+      console.log('🔄 Chargement M3U depuis:', url);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 secondes timeout
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+          'Accept': '*/*',
         },
+        signal: controller.signal,
       });
       
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
+      console.log('✅ M3U reçu, parsing en cours...');
       const m3uContent = await response.text();
+      console.log('📄 Taille M3U:', m3uContent.length, 'caractères');
+      
       const channels = parseM3U(m3uContent);
+      console.log('✅ Parsing terminé:', channels.length, 'chaînes trouvées');
       
       if (categoryId && categoryId !== '') {
-        return { data: channels.filter((ch: any) => ch.category_id === categoryId) };
+        const filtered = channels.filter((ch: any) => ch.category_id === categoryId);
+        console.log('🔍 Filtrage par catégorie:', categoryId, '→', filtered.length, 'chaînes');
+        return { data: filtered };
       }
       
       return { data: channels };
-    } catch (error) {
-      console.error('Error fetching M3U:', error);
+    } catch (error: any) {
+      console.error('❌ Erreur chargement M3U:', error.message);
+      if (error.name === 'AbortError') {
+        throw new Error('Timeout: le serveur IPTV met trop de temps à répondre');
+      }
       throw error;
     }
   },
