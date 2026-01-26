@@ -22,7 +22,7 @@ export default function HomeScreen() {
     {
       title: 'TV en Direct',
       icon: 'tv',
-      route: '/( tabs)/live',
+      route: '/(tabs)/live',
       color: '#E50914',
     },
     {
