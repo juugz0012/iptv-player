@@ -416,9 +416,13 @@ profile_data = {
 }
 response = make_request("POST", f"/profiles/{invalid_code}", profile_data)
 if response and response.status_code == 404:
-    log_test(test_name, "PASS")
+    data = response.json()
+    if "Invalid user code" in data.get("detail", ""):
+        log_test(test_name, "PASS")
+    else:
+        log_test(test_name, "FAIL", f"Wrong error message: {data.get('detail', 'No detail')}")
 elif response:
-    log_test(test_name, "FAIL", f"Expected 404 for invalid code, got: {response.status_code}")
+    log_test(test_name, "FAIL", f"Expected 404 for invalid code, got: {response.status_code}, Response: {response.text}")
 else:
     log_test(test_name, "FAIL", "Request failed - connection error")
 
