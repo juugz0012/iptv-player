@@ -102,109 +102,14 @@ const parseM3U = (m3uContent: string) => {
   return channels;
 };
 
-// Cache for M3U data
-let cachedM3UChannels: any[] | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-const loadM3U = async () => {
-  const now = Date.now();
-  
-  // Return cached data if still valid
-  if (cachedM3UChannels && (now - cacheTimestamp) < CACHE_DURATION) {
-    console.log('📦 Utilisation du cache M3U');
-    return cachedM3UChannels;
-  }
-  
-  // Load fresh M3U data
-  const XTREAM_BASE_URL = 'http://uvihkgki.leadernoob.xyz';
-  const XTREAM_USERNAME = 'GYNRNT4N';
-  const XTREAM_PASSWORD = 'WL29K25J';
-  
-  const url = `${XTREAM_BASE_URL}/get.php?username=${XTREAM_USERNAME}&password=${XTREAM_PASSWORD}&type=m3u_plus&output=mpegts`;
-  
-  console.log('🔄 Chargement M3U depuis:', url);
-  
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
-      'Accept': '*/*',
-    },
-    signal: controller.signal,
-  });
-  
-  clearTimeout(timeoutId);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  console.log('✅ M3U reçu, parsing en cours...');
-  const m3uContent = await response.text();
-  console.log('📄 Taille M3U:', m3uContent.length, 'caractères');
-  
-  const channels = parseM3U(m3uContent);
-  console.log('✅ Parsing terminé:', channels.length, 'chaînes trouvées');
-  
-  // Cache the results
-  cachedM3UChannels = channels;
-  cacheTimestamp = now;
-  
-  return channels;
-};
-
-// Direct M3U approach - more reliable
+// Xtream APIs via backend proxy (HTTPS) - bypass iOS HTTP restrictions
 export const xtreamAPI = {
-  getLiveStreams: async (categoryId?: string) => {
-    try {
-      const channels = await loadM3U();
-      
-      if (categoryId && categoryId !== '') {
-        const filtered = channels.filter((ch: any) => ch.category_id === categoryId);
-        console.log('🔍 Filtrage par catégorie:', categoryId, '→', filtered.length, 'chaînes');
-        return { data: filtered };
-      }
-      
-      return { data: channels };
-    } catch (error: any) {
-      console.error('❌ Erreur chargement M3U:', error.message);
-      if (error.name === 'AbortError') {
-        throw new Error('Timeout: le serveur IPTV met trop de temps à répondre');
-      }
-      throw error;
-    }
-  },
-  
-  getLiveCategories: async () => {
-    try {
-      const channels = await loadM3U();
-      
-      const categoriesMap = new Map();
-      channels.forEach((ch: any) => {
-        if (ch.category_id && !categoriesMap.has(ch.category_id)) {
-          categoriesMap.set(ch.category_id, {
-            category_id: ch.category_id,
-            category_name: ch.category_id,
-            parent_id: 0
-          });
-        }
-      });
-      
-      const categories = Array.from(categoriesMap.values());
-      console.log('📂 Catégories extraites:', categories.length);
-      
-      return { data: categories };
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw error;
-    }
-  },
-  
   getInfo: () => api.get('/xtream/info'),
+  getLiveCategories: () => api.get('/xtream/live-categories'),
+  getLiveStreams: (categoryId?: string) => api.get('/xtream/live-streams', { 
+    params: { category_id: categoryId },
+    timeout: 60000 // 60 secondes
+  }),
   getVodCategories: () => api.get('/xtream/vod-categories'),
   getVodStreams: (categoryId?: string) => api.get('/xtream/vod-streams', { params: { category_id: categoryId } }),
   getSeriesCategories: () => api.get('/xtream/series-categories'),
@@ -212,19 +117,31 @@ export const xtreamAPI = {
   getSeriesInfo: (seriesId: string) => api.get(`/xtream/series-info/${seriesId}`),
   getVodInfo: (vodId: string) => api.get(`/xtream/vod-info/${vodId}`),
   getEPG: (streamId: string) => api.get(`/xtream/epg/${streamId}`),
-  getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => {
-    const XTREAM_BASE_URL = 'http://uvihkgki.leadernoob.xyz';
-    const XTREAM_USERNAME = 'GYNRNT4N';
-    const XTREAM_PASSWORD = 'WL29K25J';
-    
-    let url = '';
-    if (streamType === 'live') {
-      url = `${XTREAM_BASE_URL}/live/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
-    } else if (streamType === 'movie') {
-      url = `${XTREAM_BASE_URL}/movie/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
-    } else if (streamType === 'series') {
-      url = `${XTREAM_BASE_URL}/series/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
+  getStreamUrl: async (streamType: string, streamId: string, extension: string = 'm3u8') => {
+    // For streaming, we need direct URLs that the video player can access
+    // Get the config from backend
+    try {
+      const configResponse = await xtreamConfigAPI.getConfig();
+      if (configResponse.data.configured) {
+        const baseURL = configResponse.data.dns_url;
+        let url = '';
+        
+        // Note: These credentials are hardcoded for now since backend doesn't return password
+        const username = 'GYNRNT4N';
+        const password = 'WL29K25J';
+        
+        if (streamType === 'live') {
+          url = `${baseURL}/live/${username}/${password}/${streamId}.${extension}`;
+        } else if (streamType === 'movie') {
+          url = `${baseURL}/movie/${username}/${password}/${streamId}.${extension}`;
+        } else if (streamType === 'series') {
+          url = `${baseURL}/series/${username}/${password}/${streamId}.${extension}`;
+        }
+        return { data: { url } };
+      }
+    } catch (error) {
+      console.error('Error getting stream URL:', error);
     }
-    return Promise.resolve({ data: { url } });
+    return { data: { url: '' } };
   },
 };
