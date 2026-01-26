@@ -39,6 +39,10 @@ const XTREAM_PASSWORD = '13R3ZLL9';
 const xtreamDirect = axios.create({
   baseURL: XTREAM_BASE_URL,
   timeout: 30000,
+  headers: {
+    'User-Agent': 'Lavf/60.3.100',
+    'Accept': '*/*',
+  }
 });
 
 export const xtreamAPI = {
