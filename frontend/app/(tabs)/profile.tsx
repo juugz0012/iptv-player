@@ -312,6 +312,23 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 4,
   },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#222',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E50914',
+  },
+  testButtonText: {
+    color: '#E50914',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
