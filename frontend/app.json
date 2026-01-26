@@ -12,7 +12,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Scan QR codes for setup",
-        "NSMicrophoneUsageDescription": "Enable voice features"
+        "NSMicrophoneUsageDescription": "Enable voice features",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
