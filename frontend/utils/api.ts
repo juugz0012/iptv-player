@@ -31,7 +31,7 @@ export const profileAPI = {
   verifyParentalPin: (profileId: string, pin: string) => api.post(`/profiles/${profileId}/verify-pin`, { pin }),
 };
 
-// Xtream APIs via backend proxy (to bypass mobile HTTP restrictions)
+// Xtream APIs via backend proxy - credentials managed by admin panel
 export const xtreamAPI = {
   getInfo: () => api.get('/xtream/info'),
   getLiveCategories: () => api.get('/xtream/live-categories'),
