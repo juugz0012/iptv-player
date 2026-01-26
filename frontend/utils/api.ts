@@ -32,9 +32,9 @@ export const profileAPI = {
 };
 
 // Xtream Codes Direct API (bypassing backend to avoid datacenter blocks)
-const XTREAM_BASE_URL = 'http://uvihkgki.meza.in';
-const XTREAM_USERNAME = 'GYNRNT4N';
-const XTREAM_PASSWORD = 'WL29K25J';
+const XTREAM_BASE_URL = 'http://uwmuyyff.leadernoob.xyz';
+const XTREAM_USERNAME = 'C9FFWBSS';
+const XTREAM_PASSWORD = '13R3ZLL9';
 
 const xtreamDirect = axios.create({
   baseURL: XTREAM_BASE_URL,
