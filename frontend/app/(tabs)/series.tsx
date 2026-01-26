@@ -212,7 +212,7 @@ export default function SeriesScreen() {
           renderItem={renderSeries}
           numColumns={2}
           contentContainerStyle={styles.seriesList}
-          ListEmptyComponent=(
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="list-outline" size={64} color="#666" />
               <Text style={styles.emptyText}>
