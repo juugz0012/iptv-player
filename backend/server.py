@@ -224,7 +224,10 @@ async def create_profile(user_code: str, profile: ProfileCreate):
     profile_dict["created_at"] = datetime.utcnow()
     profile_dict["parental_pin"] = "0000"  # Default PIN
     
-    await db.profiles.insert_one(profile_dict)
+    result = await db.profiles.insert_one(profile_dict)
+    
+    # Remove MongoDB's _id field before returning
+    profile_dict.pop("_id", None)
     
     return profile_dict
 
