@@ -40,8 +40,9 @@ const xtreamDirect = axios.create({
   baseURL: XTREAM_BASE_URL,
   timeout: 30000,
   headers: {
-    'User-Agent': 'Lavf/60.3.100',
+    'User-Agent': 'Lavf/58.76.100',
     'Accept': '*/*',
+    'Connection': 'keep-alive',
   }
 });
 
