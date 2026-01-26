@@ -28,7 +28,8 @@
         "WRITE_EXTERNAL_STORAGE"
       ],
       "package": "com.iptvplayer.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true
     },
     "androidTV": {
       "banner": "./assets/images/icon.png"
