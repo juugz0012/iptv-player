@@ -31,11 +31,137 @@ export const profileAPI = {
   verifyParentalPin: (profileId: string, pin: string) => api.post(`/profiles/${profileId}/verify-pin`, { pin }),
 };
 
-// Xtream APIs via backend proxy - credentials managed by admin panel
+// Xtream Config API - to get credentials from admin panel
+export const xtreamConfigAPI = {
+  getConfig: () => api.get('/admin/xtream-config'),
+};
+
+// Xtream Codes Direct API - calls DIRECTLY from mobile using credentials from backend
+let xtreamConfig: any = null;
+
+const getXtreamConfig = async () => {
+  if (!xtreamConfig) {
+    const response = await xtreamConfigAPI.getConfig();
+    if (response.data.configured) {
+      xtreamConfig = {
+        baseURL: response.data.dns_url,
+        username: response.data.username,
+        password: response.data.password, // Note: password not returned by backend for security
+      };
+    }
+  }
+  return xtreamConfig;
+};
+
+// For M3U parsing
+const parseM3U = (m3uContent: string) => {
+  const lines = m3uContent.split('\n');
+  const channels: any[] = [];
+  let currentChannel: any = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (line.startsWith('#EXTINF:')) {
+      currentChannel = {};
+      
+      const tvgIdMatch = line.match(/tvg-id="([^"]*)"/);
+      const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
+      const tvgLogoMatch = line.match(/tvg-logo="([^"]*)"/);
+      const groupTitleMatch = line.match(/group-title="([^"]*)"/);
+      
+      if (tvgIdMatch) currentChannel.stream_id = tvgIdMatch[1];
+      if (tvgNameMatch) currentChannel.name = tvgNameMatch[1];
+      if (tvgLogoMatch) currentChannel.stream_icon = tvgLogoMatch[1];
+      if (groupTitleMatch) currentChannel.category_id = groupTitleMatch[1];
+      
+      if (!currentChannel.name) {
+        const nameMatch = line.match(/,(.+)$/);
+        if (nameMatch) currentChannel.name = nameMatch[1].trim();
+      }
+    } else if (line && !line.startsWith('#') && currentChannel) {
+      currentChannel.stream_url = line;
+      
+      if (!currentChannel.stream_id) {
+        const idMatch = line.match(/\/(\d+)\./);
+        if (idMatch) currentChannel.stream_id = parseInt(idMatch[1]);
+      }
+      
+      if (!currentChannel.stream_id) {
+        currentChannel.stream_id = channels.length + 1;
+      }
+      if (!currentChannel.category_id) {
+        currentChannel.category_id = '';
+      }
+      
+      channels.push(currentChannel);
+      currentChannel = null;
+    }
+  }
+  
+  return channels;
+};
+
+// Direct M3U approach - more reliable
 export const xtreamAPI = {
+  getLiveStreams: async (categoryId?: string) => {
+    try {
+      // Use hardcoded working credentials directly
+      const XTREAM_BASE_URL = 'http://uvihkgki.leadernoob.xyz';
+      const XTREAM_USERNAME = 'GYNRNT4N';
+      const XTREAM_PASSWORD = 'WL29K25J';
+      
+      const url = `${XTREAM_BASE_URL}/get.php?username=${XTREAM_USERNAME}&password=${XTREAM_PASSWORD}&type=m3u_plus&output=mpegts`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const m3uContent = await response.text();
+      const channels = parseM3U(m3uContent);
+      
+      if (categoryId && categoryId !== '') {
+        return { data: channels.filter((ch: any) => ch.category_id === categoryId) };
+      }
+      
+      return { data: channels };
+    } catch (error) {
+      console.error('Error fetching M3U:', error);
+      throw error;
+    }
+  },
+  
+  getLiveCategories: async () => {
+    try {
+      const streams = await xtreamAPI.getLiveStreams();
+      const channels = streams.data;
+      
+      const categoriesMap = new Map();
+      channels.forEach((ch: any) => {
+        if (ch.category_id && !categoriesMap.has(ch.category_id)) {
+          categoriesMap.set(ch.category_id, {
+            category_id: ch.category_id,
+            category_name: ch.category_id,
+            parent_id: 0
+          });
+        }
+      });
+      
+      return { data: Array.from(categoriesMap.values()) };
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  },
+  
   getInfo: () => api.get('/xtream/info'),
-  getLiveCategories: () => api.get('/xtream/live-categories'),
-  getLiveStreams: (categoryId?: string) => api.get('/xtream/live-streams', { params: { category_id: categoryId } }),
   getVodCategories: () => api.get('/xtream/vod-categories'),
   getVodStreams: (categoryId?: string) => api.get('/xtream/vod-streams', { params: { category_id: categoryId } }),
   getSeriesCategories: () => api.get('/xtream/series-categories'),
@@ -43,6 +169,19 @@ export const xtreamAPI = {
   getSeriesInfo: (seriesId: string) => api.get(`/xtream/series-info/${seriesId}`),
   getVodInfo: (vodId: string) => api.get(`/xtream/vod-info/${vodId}`),
   getEPG: (streamId: string) => api.get(`/xtream/epg/${streamId}`),
-  getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => 
-    api.get(`/xtream/stream-url/${streamType}/${streamId}`, { params: { extension } }),
+  getStreamUrl: (streamType: string, streamId: string, extension: string = 'm3u8') => {
+    const XTREAM_BASE_URL = 'http://uvihkgki.leadernoob.xyz';
+    const XTREAM_USERNAME = 'GYNRNT4N';
+    const XTREAM_PASSWORD = 'WL29K25J';
+    
+    let url = '';
+    if (streamType === 'live') {
+      url = `${XTREAM_BASE_URL}/live/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
+    } else if (streamType === 'movie') {
+      url = `${XTREAM_BASE_URL}/movie/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
+    } else if (streamType === 'series') {
+      url = `${XTREAM_BASE_URL}/series/${XTREAM_USERNAME}/${XTREAM_PASSWORD}/${streamId}.${extension}`;
+    }
+    return Promise.resolve({ data: { url } });
+  },
 };
