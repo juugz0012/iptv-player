@@ -307,6 +307,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#E50914',
+    marginBottom: 20,
+  },
+  testButtonText: {
+    color: '#E50914',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   infoText: {
     fontSize: 12,
     color: '#666',
