@@ -1,0 +1,13 @@
+diff --git a/frontend/app/(tabs)/series.tsx b/frontend/app/(tabs)/series.tsx
+index 538ffa9..ac527c3 100644
+--- a/frontend/app/(tabs)/series.tsx
++++ b/frontend/app/(tabs)/series.tsx
+@@ -212,7 +212,7 @@ export default function SeriesScreen() {
+           renderItem={renderSeries}
+           numColumns={2}
+           contentContainerStyle={styles.seriesList}
+-          ListEmptyComponent=(
++          ListEmptyComponent={
+             <View style={styles.emptyContainer}>
+               <Ionicons name="list-outline" size={64} color="#666" />
+               <Text style={styles.emptyText}>
