@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,17 +6,23 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { xtreamAPI } from '../../utils/api';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { currentProfile } = useAuth();
+  const { currentProfile, userCode } = useAuth();
+  const [loadingPlaylist, setLoadingPlaylist] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const categories = [
     {
