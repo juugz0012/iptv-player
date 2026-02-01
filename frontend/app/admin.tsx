@@ -22,6 +22,7 @@ export default function AdminScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [maxProfiles, setMaxProfiles] = useState('5');
+  const [userNote, setUserNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [accountInfo, setAccountInfo] = useState<any>(null);
