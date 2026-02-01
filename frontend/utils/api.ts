@@ -12,11 +12,23 @@ export const api = axios.create({
 export const adminAPI = {
   saveXtreamConfig: (config: any) => api.post('/admin/xtream-config', config),
   getXtreamConfig: () => api.get('/admin/xtream-config'),
-  createUserCode: (maxProfiles: number = 5, userNote: string = '') => 
-    api.post('/admin/user-codes', { max_profiles: maxProfiles, user_note: userNote }),
+  createUserCode: (maxProfiles: number = 5, userNote: string = '', dnsUrl: string, xtreamUsername: string, xtreamPassword: string) => 
+    api.post('/admin/user-codes', { 
+      max_profiles: maxProfiles, 
+      user_note: userNote,
+      dns_url: dnsUrl,
+      xtream_username: xtreamUsername,
+      xtream_password: xtreamPassword
+    }),
   listUserCodes: () => api.get('/admin/user-codes'),
-  updateUserCode: (code: string, maxProfiles: number, userNote: string = '') =>
-    api.put(`/admin/user-codes/${code}`, { max_profiles: maxProfiles, user_note: userNote }),
+  updateUserCode: (code: string, maxProfiles: number, userNote: string = '', dnsUrl: string, xtreamUsername: string, xtreamPassword: string) =>
+    api.put(`/admin/user-codes/${code}`, { 
+      max_profiles: maxProfiles, 
+      user_note: userNote,
+      dns_url: dnsUrl,
+      xtream_username: xtreamUsername,
+      xtream_password: xtreamPassword
+    }),
   deleteUserCode: (code: string) => api.delete(`/admin/user-codes/${code}`),
   // New: Create user with Xtream verification in one step
   createUserWithXtream: (config: { dns_url: string; username: string; password: string; samsung_lg_dns?: string }, maxProfiles: number = 5) => 
