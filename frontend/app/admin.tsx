@@ -46,28 +46,82 @@ export default function AdminScreen() {
       setGeneratedCode(null);
       setAccountInfo(null);
 
-      const response = await adminAPI.createUserWithXtream(
-        {
-          dns_url: dnsUrl.trim(),
+      // Step 1: Verify Xtream connection directly from app (bypasses Cloudflare)
+      const verifyUrl = `${dnsUrl.trim()}/player_api.php`;
+      const verifyResponse = await axios.get(verifyUrl, {
+        params: {
           username: username.trim(),
           password: password.trim(),
         },
-        profiles
-      );
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+        },
+        timeout: 15000,
+      });
 
-      if (response.data.success) {
-        setGeneratedCode(response.data.code);
-        setAccountInfo(response.data.xtream_info);
-        
-        Alert.alert(
-          '✅ Utilisateur créé !',
-          `Code généré: ${response.data.code}\n\nExpiration: ${response.data.xtream_info.expiration_date || 'Inconnue'}`,
-          [{ text: 'OK' }]
-        );
+      const userInfo = verifyResponse.data?.user_info;
+      if (!userInfo) {
+        Alert.alert('Erreur', 'Impossible de récupérer les informations du compte. Vérifiez vos identifiants.');
+        return;
       }
+
+      // Format expiration date
+      const expirationTimestamp = userInfo.exp_date;
+      let expirationDateStr = 'Inconnue';
+      if (expirationTimestamp) {
+        try {
+          const expDate = new Date(parseInt(expirationTimestamp) * 1000);
+          expirationDateStr = expDate.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } catch (e) {
+          console.error('Error parsing date:', e);
+        }
+      }
+
+      // Step 2: Save config to backend
+      await adminAPI.saveXtreamConfig({
+        dns_url: dnsUrl.trim(),
+        username: username.trim(),
+        password: password.trim(),
+      });
+
+      // Step 3: Generate user code
+      const codeResponse = await adminAPI.createUserCode(profiles);
+
+      setGeneratedCode(codeResponse.data.code);
+      setAccountInfo({
+        username: userInfo.username,
+        status: userInfo.status,
+        expiration_date: expirationDateStr,
+        max_connections: userInfo.max_connections,
+        active_connections: userInfo.active_cons,
+      });
+
+      Alert.alert(
+        '✅ Utilisateur créé !',
+        `Code généré: ${codeResponse.data.code}\n\nExpiration: ${expirationDateStr}`,
+        [{ text: 'OK' }]
+      );
     } catch (error: any) {
       console.error('Error creating user:', error);
-      const errorMessage = error.response?.data?.detail || 'Erreur lors de la création de l\'utilisateur';
+      
+      let errorMessage = 'Erreur lors de la création de l\'utilisateur';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Erreur HTTP 401: Identifiants invalides ou DNS incorrect';
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Timeout: Le serveur IPTV ne répond pas. Vérifiez le DNS.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = `Erreur de connexion: ${error.message}`;
+      }
+      
       Alert.alert('Erreur', errorMessage);
     } finally {
       setLoading(false);
