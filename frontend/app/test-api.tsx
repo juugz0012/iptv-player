@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import { xtreamAPI } from '../utils/api';
 
 export default function TestAPIScreen() {
   const [results, setResults] = useState<string[]>([]);
@@ -25,59 +25,42 @@ export default function TestAPIScreen() {
     setLoading(true);
     setResults([]);
     
-    addResult('🔍 Test 1: Connexion directe à l\'API Xtream Codes');
+    addResult('🔍 Test 1: Récupération des identifiants depuis le backend');
     
     try {
-      const response = await axios.get('http://uwmuyyff.leadernoob.xyz/player_api.php', {
-        params: {
-          username: 'C9FFWBSS',
-          password: '13R3ZLL9'
-        },
-        headers: {
-          'User-Agent': 'Lavf/58.76.100',
-        },
-        timeout: 10000,
-      });
+      // This will automatically fetch credentials from backend
+      addResult('✅ Tentative de connexion...');
       
-      addResult(`✅ Succès! Status: ${response.status}`);
-      addResult(`📊 Données reçues: ${JSON.stringify(response.data).substring(0, 200)}...`);
+      addResult('\n🔍 Test 2: Récupération des catégories Live TV');
+      const categoriesResponse = await xtreamAPI.getLiveCategories();
       
-      if (response.data.user_info) {
-        addResult(`👤 User Info: ${JSON.stringify(response.data.user_info)}`);
+      addResult(`✅ Succès! ${categoriesResponse.data?.length || 0} catégories trouvées`);
+      if (categoriesResponse.data && categoriesResponse.data.length > 0) {
+        addResult(`📺 Première catégorie: ${categoriesResponse.data[0].category_name}`);
+        addResult(`📺 Deuxième catégorie: ${categoriesResponse.data[1]?.category_name || 'N/A'}`);
       }
+      
+      addResult('\n🔍 Test 3: Récupération des chaînes (première catégorie)');
+      if (categoriesResponse.data && categoriesResponse.data.length > 0) {
+        const firstCategoryId = categoriesResponse.data[0].category_id;
+        const streamsResponse = await xtreamAPI.getLiveStreams(firstCategoryId);
+        
+        addResult(`✅ Succès! ${streamsResponse.data?.length || 0} chaînes trouvées`);
+        if (streamsResponse.data && streamsResponse.data.length > 0) {
+          addResult(`📡 Première chaîne: ${streamsResponse.data[0].name}`);
+          addResult(`📡 ID: ${streamsResponse.data[0].stream_id}`);
+        }
+      }
+      
+      addResult('\n🎉 TOUS LES TESTS RÉUSSIS ! L\'application peut maintenant charger la playlist IPTV directement !');
+      
     } catch (error: any) {
-      addResult(`❌ Erreur: ${error.message}`);
+      addResult(`\n❌ ERREUR: ${error.message}`);
       if (error.response) {
-        addResult(`📡 Status: ${error.response.status}`);
-        addResult(`📄 Data: ${JSON.stringify(error.response.data)}`);
+        addResult(`📡 Status HTTP: ${error.response.status}`);
+        addResult(`📄 Message: ${JSON.stringify(error.response.data)}`);
       }
-      addResult(`🔧 Config: ${JSON.stringify(error.config?.url)}`);
-    }
-    
-    addResult('\n🔍 Test 2: Test des catégories live');
-    
-    try {
-      const response = await axios.get('http://uwmuyyff.leadernoob.xyz/player_api.php', {
-        params: {
-          username: 'C9FFWBSS',
-          password: '13R3ZLL9',
-          action: 'get_live_categories'
-        },
-        headers: {
-          'User-Agent': 'Lavf/58.76.100',
-        },
-        timeout: 10000,
-      });
-      
-      addResult(`✅ Catégories récupérées! Count: ${response.data?.length || 0}`);
-      if (response.data && response.data.length > 0) {
-        addResult(`📺 Première catégorie: ${JSON.stringify(response.data[0])}`);
-      }
-    } catch (error: any) {
-      addResult(`❌ Erreur catégories: ${error.message}`);
-      if (error.response) {
-        addResult(`📡 Status: ${error.response.status}`);
-      }
+      addResult(`\n💡 Vérifiez que les identifiants sont configurés dans le panel admin`);
     }
     
     setLoading(false);
