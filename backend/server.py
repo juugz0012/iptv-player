@@ -278,12 +278,15 @@ async def get_all_user_codes():
 
 @api_router.put("/admin/user-codes/{code}")
 async def update_user_code(code: str, input: UserCodeCreate):
-    """Admin: Update user code details"""
+    """Admin: Update user code details including Xtream credentials"""
     result = await db.user_codes.update_one(
         {"code": code},
         {"$set": {
             "max_profiles": input.max_profiles,
-            "user_note": input.user_note or ""
+            "user_note": input.user_note or "",
+            "dns_url": input.dns_url,
+            "xtream_username": input.xtream_username,
+            "xtream_password": input.xtream_password
         }}
     )
     
