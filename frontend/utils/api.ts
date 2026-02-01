@@ -30,6 +30,11 @@ export const adminAPI = {
       xtream_password: xtreamPassword
     }),
   deleteUserCode: (code: string) => api.delete(`/admin/user-codes/${code}`),
+  bulkUpdateDNS: (userCodes: string[], newDnsUrl: string) =>
+    api.post('/admin/bulk-update-dns', {
+      user_codes: userCodes,
+      new_dns_url: newDnsUrl
+    }),
   // New: Create user with Xtream verification in one step
   createUserWithXtream: (config: { dns_url: string; username: string; password: string; samsung_lg_dns?: string }, maxProfiles: number = 5) => 
     api.post('/admin/create-user-with-xtream', config, { params: { max_profiles: maxProfiles } }),
