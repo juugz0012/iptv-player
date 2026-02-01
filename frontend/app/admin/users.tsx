@@ -103,11 +103,19 @@ export default function UsersManagementScreen() {
       return;
     }
 
+    if (!editingUser.editDns || !editingUser.editUsername || !editingUser.editPassword) {
+      Alert.alert('Erreur', 'DNS, Username et Password sont obligatoires');
+      return;
+    }
+
     try {
       await adminAPI.updateUserCode(
         editingUser.code,
         maxProfiles,
-        editingUser.editNote.trim()
+        editingUser.editNote.trim(),
+        editingUser.editDns.trim(),
+        editingUser.editUsername.trim(),
+        editingUser.editPassword.trim()
       );
       Alert.alert('✅ Succès', 'Utilisateur modifié');
       setEditingUser(null);
