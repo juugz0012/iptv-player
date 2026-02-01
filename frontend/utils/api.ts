@@ -36,6 +36,9 @@ export const xtreamConfigAPI = {
   getConfig: () => api.get('/admin/xtream-config'),
 };
 
+// ==================== XTREAM DIRECT API ====================
+// All calls go directly from the app to the Xtream server (bypasses Cloudflare blocks)
+
 // Xtream Codes Direct API - calls DIRECTLY from mobile using credentials from backend
 let xtreamConfig: any = null;
 
