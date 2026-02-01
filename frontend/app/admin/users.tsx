@@ -126,24 +126,23 @@ export default function UsersManagementScreen() {
     }
   };
 
-  const handleVerifyDNS = async (userCode: string) => {
+  const handleVerifyDNS = async (user: any) => {
     try {
-      setVerifyingUser(userCode);
+      setVerifyingUser(user.code);
       
-      // Récupérer la config Xtream
-      const configResponse = await adminAPI.getXtreamConfig();
-      if (!configResponse.data.configured) {
-        Alert.alert('Erreur', 'Configuration Xtream non trouvée');
+      if (!user.dns_url || !user.xtream_username || !user.xtream_password) {
+        Alert.alert('Erreur', 'Identifiants Xtream incomplets pour cet utilisateur');
         setVerifyingUser(null);
         return;
       }
 
-      const { dns_url, username, password } = configResponse.data;
-
-      // Vérifier la connexion
-      const verifyUrl = `${dns_url}/player_api.php`;
+      // Vérifier la connexion avec les identifiants propres de l'utilisateur
+      const verifyUrl = `${user.dns_url}/player_api.php`;
       const response = await axios.get(verifyUrl, {
-        params: { username, password },
+        params: { 
+          username: user.xtream_username, 
+          password: user.xtream_password 
+        },
         headers: {
           'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
         },
@@ -154,13 +153,13 @@ export default function UsersManagementScreen() {
       if (userInfo && userInfo.status === 'Active') {
         setVerificationStatus({
           ...verificationStatus,
-          [userCode]: { status: true, message: 'IPTV OK' },
+          [user.code]: { status: true, message: 'IPTV OK' },
         });
         Alert.alert('✅ DNS OK', 'Le DNS et les identifiants sont valides !');
       } else {
         setVerificationStatus({
           ...verificationStatus,
-          [userCode]: { status: false, message: 'Inactif' },
+          [user.code]: { status: false, message: 'Inactif' },
         });
         Alert.alert('⚠️ Compte inactif', 'Le compte IPTV est inactif ou expiré');
       }
@@ -168,7 +167,7 @@ export default function UsersManagementScreen() {
       console.error('Error verifying DNS:', error);
       setVerificationStatus({
         ...verificationStatus,
-        [userCode]: { status: false, message: 'Erreur' },
+        [user.code]: { status: false, message: 'Erreur' },
       });
       
       if (error.response?.status === 401) {
