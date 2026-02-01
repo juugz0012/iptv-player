@@ -92,7 +92,7 @@ export default function AdminScreen() {
         password: password.trim(),
       });
 
-      // Step 3: Generate user code
+      // Step 3: Generate user code with note
       const codeResponse = await adminAPI.createUserCode(profiles);
 
       setGeneratedCode(codeResponse.data.code);
@@ -102,11 +102,12 @@ export default function AdminScreen() {
         expiration_date: expirationDateStr,
         max_connections: userInfo.max_connections,
         active_connections: userInfo.active_cons,
+        user_note: userNote.trim() || '',
       });
 
       Alert.alert(
         '✅ Utilisateur créé !',
-        `Code généré: ${codeResponse.data.code}\n\nExpiration: ${expirationDateStr}`,
+        `✅ DNS vérifié : ${dnsUrl}\n\nCode généré: ${codeResponse.data.code}\n\nExpiration: ${expirationDateStr}\n\nConnexions max: ${userInfo.max_connections || 'N/A'}`,
         [{ text: 'OK' }]
       );
     } catch (error: any) {
