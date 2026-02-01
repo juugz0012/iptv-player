@@ -85,15 +85,17 @@ export default function AdminScreen() {
         }
       }
 
-      // Step 2: Save config to backend
-      await adminAPI.saveXtreamConfig({
-        dns_url: dnsUrl.trim(),
-        username: username.trim(),
-        password: password.trim(),
-      });
+      // Step 2: No need to save global config anymore
+      // Each user has their own Xtream credentials
 
-      // Step 3: Generate user code with note
-      const codeResponse = await adminAPI.createUserCode(profiles, userNote.trim());
+      // Step 3: Generate user code with Xtream credentials
+      const codeResponse = await adminAPI.createUserCode(
+        profiles,
+        userNote.trim(),
+        dnsUrl.trim(),
+        username.trim(),
+        password.trim()
+      );
 
       setGeneratedCode(codeResponse.data.code);
       setAccountInfo({
