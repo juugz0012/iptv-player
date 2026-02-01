@@ -12,7 +12,8 @@ export const api = axios.create({
 export const adminAPI = {
   saveXtreamConfig: (config: any) => api.post('/admin/xtream-config', config),
   getXtreamConfig: () => api.get('/admin/xtream-config'),
-  createUserCode: (maxProfiles: number = 5) => api.post('/admin/user-codes', { max_profiles: maxProfiles }),
+  createUserCode: (maxProfiles: number = 5, userNote: string = '') => 
+    api.post('/admin/user-codes', { max_profiles: maxProfiles, user_note: userNote }),
   listUserCodes: () => api.get('/admin/user-codes'),
   deleteUserCode: (code: string) => api.delete(`/admin/user-codes/${code}`),
   // New: Create user with Xtream verification in one step
