@@ -1083,11 +1083,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
     gap: 8,
-    shadowColor: '#E50914',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   loadPlaylistButtonText: {
     color: '#fff',
