@@ -57,6 +57,9 @@ class UserCode(BaseModel):
 class UserCodeCreate(BaseModel):
     max_profiles: int = 5
     user_note: Optional[str] = None
+    dns_url: str
+    xtream_username: str
+    xtream_password: str
 
 class Profile(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
