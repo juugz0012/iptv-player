@@ -302,6 +302,43 @@ export default function UsersManagementScreen() {
                     numberOfLines={3}
                   />
 
+                  <Text style={styles.editLabel}>DNS / URL du serveur *</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editingUser.editDns}
+                    onChangeText={(text) =>
+                      setEditingUser({ ...editingUser, editDns: text })
+                    }
+                    placeholder="http://example.com"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.editLabel}>Username Xtream *</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editingUser.editUsername}
+                    onChangeText={(text) =>
+                      setEditingUser({ ...editingUser, editUsername: text })
+                    }
+                    placeholder="Username"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.editLabel}>Password Xtream *</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editingUser.editPassword}
+                    onChangeText={(text) =>
+                      setEditingUser({ ...editingUser, editPassword: text })
+                    }
+                    placeholder="Password"
+                    placeholderTextColor="#666"
+                    autoCapitalize="none"
+                    secureTextEntry
+                  />
+
                   <View style={styles.editButtons}>
                     <TouchableOpacity
                       style={styles.cancelButton}
