@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '../utils/api';
+import axios from 'axios';
 
 export default function AdminScreen() {
   const [dnsUrl, setDnsUrl] = useState('');
