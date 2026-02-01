@@ -227,6 +227,20 @@ export default function AdminScreen() {
               <Text style={styles.helpText}>
                 Combien de profils cet utilisateur pourra créer (1-10)
               </Text>
+
+              <Text style={styles.label}>Note / Commentaire (optionnel)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Ex: Client Premium, Abonnement 6 mois..."
+                placeholderTextColor="#666"
+                value={userNote}
+                onChangeText={setUserNote}
+                multiline
+                numberOfLines={3}
+              />
+              <Text style={styles.helpText}>
+                Ajoutez une note pour identifier cet utilisateur
+              </Text>
             </View>
 
             <TouchableOpacity
