@@ -22,6 +22,8 @@ export default function UsersManagementScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [verifyingUser, setVerifyingUser] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<{ [key: string]: { status: boolean; message: string } }>({});
   const router = useRouter();
 
   useEffect(() => {
