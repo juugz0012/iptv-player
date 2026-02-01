@@ -16,18 +16,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { adminAPI } from '../../utils/api';
 
 export default function DNSSettingsScreen() {
-  const [currentConfig, setCurrentConfig] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [newDns, setNewDns] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     checkAdminAuth();
-    fetchCurrentConfig();
+    fetchUsers();
   }, []);
 
   const checkAdminAuth = async () => {
@@ -37,32 +35,49 @@ export default function DNSSettingsScreen() {
     }
   };
 
-  const fetchCurrentConfig = async () => {
+  const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await adminAPI.getXtreamConfig();
-      if (response.data.configured) {
-        setCurrentConfig(response.data);
-        setNewDns(response.data.dns_url);
-        setNewUsername(response.data.username);
-        setNewPassword(response.data.password);
-      }
+      const response = await adminAPI.listUserCodes();
+      setUsers(response.data || []);
     } catch (error: any) {
-      console.error('Error fetching config:', error);
+      console.error('Error fetching users:', error);
+      Alert.alert('Erreur', 'Impossible de charger les utilisateurs');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateConfig = async () => {
-    if (!newDns || !newUsername || !newPassword) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+  const toggleUserSelection = (code: string) => {
+    if (selectedUsers.includes(code)) {
+      setSelectedUsers(selectedUsers.filter(c => c !== code));
+    } else {
+      setSelectedUsers([...selectedUsers, code]);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(users.map(u => u.code));
+    }
+  };
+
+  const handleUpdateDNS = async () => {
+    if (selectedUsers.length === 0) {
+      Alert.alert('Erreur', 'Veuillez sélectionner au moins un utilisateur');
+      return;
+    }
+
+    if (!newDns.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer le nouveau DNS');
       return;
     }
 
     Alert.alert(
       'Confirmation',
-      'Modifier la configuration Xtream pour TOUS les utilisateurs ?\n\nTous les utilisateurs utiliseront ces nouveaux identifiants.',
+      `Modifier le DNS pour ${selectedUsers.length} utilisateur(s) ?\n\nNouveau DNS: ${newDns}\n\nLe username et password de chaque utilisateur resteront inchangés.`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -71,20 +86,19 @@ export default function DNSSettingsScreen() {
           onPress: async () => {
             try {
               setUpdating(true);
-              await adminAPI.saveXtreamConfig({
-                dns_url: newDns.trim(),
-                username: newUsername.trim(),
-                password: newPassword.trim(),
-              });
+              const response = await adminAPI.bulkUpdateDNS(selectedUsers, newDns.trim());
               
               Alert.alert(
                 '✅ Succès',
-                'Configuration mise à jour pour tous les utilisateurs'
+                `DNS mis à jour pour ${response.data.modified_count} utilisateur(s)`
               );
-              fetchCurrentConfig();
+              
+              setSelectedUsers([]);
+              setNewDns('');
+              fetchUsers();
             } catch (error: any) {
-              console.error('Error updating config:', error);
-              Alert.alert('Erreur', 'Impossible de mettre à jour la configuration');
+              console.error('Error updating DNS:', error);
+              Alert.alert('Erreur', 'Impossible de mettre à jour le DNS');
             } finally {
               setUpdating(false);
             }
@@ -111,45 +125,28 @@ export default function DNSSettingsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Gestion DNS</Text>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.title}>Gestion DNS</Text>
+          <Text style={styles.subtitle}>
+            {selectedUsers.length} / {users.length} sélectionné(s)
+          </Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.warningBox}>
-          <Ionicons name="warning" size={24} color="#FFA500" />
+          <Ionicons name="information-circle" size={24} color="#2196F3" />
           <View style={styles.warningTextContainer}>
-            <Text style={styles.warningTitle}>Attention</Text>
+            <Text style={styles.warningTitle}>Modification du DNS uniquement</Text>
             <Text style={styles.warningText}>
-              La modification de cette configuration affectera **TOUS** les utilisateurs.
-              Assurez-vous que les identifiants sont corrects.
+              Le username et password de chaque utilisateur restent inchangés.
+              Seul le DNS sera modifié pour les utilisateurs sélectionnés.
             </Text>
           </View>
         </View>
 
-        {currentConfig && (
-          <View style={styles.currentConfigBox}>
-            <Text style={styles.sectionTitle}>Configuration actuelle</Text>
-            <View style={styles.configRow}>
-              <Text style={styles.configLabel}>DNS :</Text>
-              <Text style={styles.configValue}>{currentConfig.dns_url}</Text>
-            </View>
-            <View style={styles.configRow}>
-              <Text style={styles.configLabel}>Username :</Text>
-              <Text style={styles.configValue}>{currentConfig.username}</Text>
-            </View>
-            <View style={styles.configRow}>
-              <Text style={styles.configLabel}>Date de création :</Text>
-              <Text style={styles.configValue}>
-                {new Date(currentConfig.created_at).toLocaleDateString('fr-FR')}
-              </Text>
-            </View>
-          </View>
-        )}
-
         <View style={styles.formContainer}>
-          <Text style={styles.sectionTitle}>Nouvelle configuration</Text>
-
-          <Text style={styles.label}>DNS / URL du serveur *</Text>
+          <Text style={styles.sectionTitle}>Nouveau DNS</Text>
           <TextInput
             style={styles.input}
             placeholder="http://example.com"
@@ -159,70 +156,84 @@ export default function DNSSettingsScreen() {
             autoCapitalize="none"
             autoCorrect={false}
           />
-
-          <Text style={styles.label}>Username *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Votre username"
-            placeholderTextColor="#666"
-            value={newUsername}
-            onChangeText={setNewUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <Text style={styles.label}>Password *</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Votre password"
-              placeholderTextColor="#666"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="#666"
-              />
-            </TouchableOpacity>
-          </View>
         </View>
 
+        <View style={styles.selectionHeader}>
+          <Text style={styles.sectionTitle}>Sélectionner les utilisateurs</Text>
+          <TouchableOpacity
+            style={styles.selectAllButton}
+            onPress={toggleSelectAll}
+          >
+            <Ionicons
+              name={selectedUsers.length === users.length ? 'checkbox' : 'square-outline'}
+              size={24}
+              color="#2196F3"
+            />
+            <Text style={styles.selectAllText}>Tout sélectionner</Text>
+          </TouchableOpacity>
+        </View>
+
+        {users.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={64} color="#666" />
+            <Text style={styles.emptyText}>Aucun utilisateur</Text>
+          </View>
+        ) : (
+          users.map((user) => (
+            <TouchableOpacity
+              key={user.code}
+              style={[
+                styles.userCard,
+                selectedUsers.includes(user.code) && styles.userCardSelected
+              ]}
+              onPress={() => toggleUserSelection(user.code)}
+            >
+              <View style={styles.checkboxContainer}>
+                <Ionicons
+                  name={selectedUsers.includes(user.code) ? 'checkbox' : 'square-outline'}
+                  size={28}
+                  color={selectedUsers.includes(user.code) ? '#2196F3' : '#666'}
+                />
+              </View>
+              <View style={styles.userInfoContainer}>
+                <View style={styles.userRow}>
+                  <Text style={styles.userCode}>{user.code}</Text>
+                  {user.user_note && (
+                    <Text style={styles.userNote} numberOfLines={1}>
+                      {user.user_note}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.userDNS} numberOfLines={1}>
+                  📡 {user.dns_url || 'DNS non configuré'}
+                </Text>
+                <Text style={styles.userDetails}>
+                  👤 {user.xtream_username || 'N/A'} • 👥 {user.max_profiles} profils
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+
         <TouchableOpacity
-          style={[styles.updateButton, updating && styles.buttonDisabled]}
-          onPress={handleUpdateConfig}
-          disabled={updating}
+          style={[
+            styles.updateButton,
+            (updating || selectedUsers.length === 0) && styles.buttonDisabled
+          ]}
+          onPress={handleUpdateDNS}
+          disabled={updating || selectedUsers.length === 0}
         >
           {updating ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="globe" size={24} color="#fff" />
-              <Text style={styles.buttonText}>Mettre à jour pour tous les utilisateurs</Text>
+              <Ionicons name="cloud-upload" size={24} color="#fff" />
+              <Text style={styles.buttonText}>
+                Mettre à jour le DNS ({selectedUsers.length} utilisateur{selectedUsers.length > 1 ? 's' : ''})
+              </Text>
             </>
           )}
         </TouchableOpacity>
-
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle" size={24} color="#2196F3" />
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Comment ça fonctionne ?</Text>
-            <Text style={styles.infoText}>
-              • Cette configuration est partagée par tous les utilisateurs{'\n'}
-              • Seul le code utilisateur est unique{'\n'}
-              • La modification prend effet immédiatement{'\n'}
-              • Les utilisateurs devront se reconnecter
-            </Text>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -255,10 +266,18 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 16,
   },
+  headerTextContainer: {
+    flex: 1,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 4,
   },
   content: {
     flex: 1,
@@ -272,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#FFA500',
+    borderLeftColor: '#2196F3',
     marginBottom: 24,
   },
   warningTextContainer: {
@@ -282,7 +301,7 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFA500',
+    color: '#2196F3',
     marginBottom: 4,
   },
   warningText: {
@@ -290,43 +309,14 @@ const styles = StyleSheet.create({
     color: '#ccc',
     lineHeight: 20,
   },
-  currentConfigBox: {
-    backgroundColor: '#222',
-    borderRadius: 12,
-    padding: 16,
+  formContainer: {
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#333',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
-  },
-  configRow: {
-    flexDirection: 'row',
     marginBottom: 12,
-  },
-  configLabel: {
-    fontSize: 14,
-    color: '#888',
-    width: 120,
-  },
-  configValue: {
-    flex: 1,
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  formContainer: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    color: '#ccc',
-    marginBottom: 8,
-    marginTop: 12,
   },
   input: {
     backgroundColor: '#222',
@@ -337,22 +327,77 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  passwordContainer: {
+  selectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: '#2196F3',
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  userCard: {
+    flexDirection: 'row',
     backgroundColor: '#222',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
     borderColor: '#333',
   },
-  passwordInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: '#fff',
+  userCardSelected: {
+    borderColor: '#2196F3',
+    backgroundColor: '#2196F3' + '10',
   },
-  eyeButton: {
-    padding: 16,
+  checkboxContainer: {
+    marginRight: 16,
+    justifyContent: 'center',
+  },
+  userInfoContainer: {
+    flex: 1,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+  },
+  userCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#E50914',
+  },
+  userNote: {
+    flex: 1,
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  userDNS: {
+    fontSize: 14,
+    color: '#fff',
+    marginBottom: 6,
+  },
+  userDetails: {
+    fontSize: 13,
+    color: '#888',
   },
   updateButton: {
     flexDirection: 'row',
@@ -361,7 +406,8 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginTop: 24,
+    gap: 12,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -370,29 +416,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 12,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
-  },
-  infoTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#ccc',
-    lineHeight: 20,
   },
 });
