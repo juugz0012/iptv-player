@@ -276,4 +276,44 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 12,
   },
+  loadPlaylistSection: {
+    padding: 16,
+    marginBottom: 24,
+  },
+  loadPlaylistButton: {
+    backgroundColor: '#E50914',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  loadPlaylistButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#33001a',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 4,
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
