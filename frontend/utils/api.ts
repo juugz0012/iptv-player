@@ -15,6 +15,8 @@ export const adminAPI = {
   createUserCode: (maxProfiles: number = 5, userNote: string = '') => 
     api.post('/admin/user-codes', { max_profiles: maxProfiles, user_note: userNote }),
   listUserCodes: () => api.get('/admin/user-codes'),
+  updateUserCode: (code: string, maxProfiles: number, userNote: string = '') =>
+    api.put(`/admin/user-codes/${code}`, { max_profiles: maxProfiles, user_note: userNote }),
   deleteUserCode: (code: string) => api.delete(`/admin/user-codes/${code}`),
   // New: Create user with Xtream verification in one step
   createUserWithXtream: (config: { dns_url: string; username: string; password: string; samsung_lg_dns?: string }, maxProfiles: number = 5) => 
