@@ -115,6 +115,68 @@ export default function UsersManagementScreen() {
     }
   };
 
+  const handleVerifyDNS = async (userCode: string) => {
+    try {
+      setVerifyingUser(userCode);
+      
+      // Récupérer la config Xtream
+      const configResponse = await adminAPI.getXtreamConfig();
+      if (!configResponse.data.configured) {
+        Alert.alert('Erreur', 'Configuration Xtream non trouvée');
+        setVerifyingUser(null);
+        return;
+      }
+
+      const { dns_url, username, password } = configResponse.data;
+
+      // Vérifier la connexion
+      const verifyUrl = `${dns_url}/player_api.php`;
+      const response = await axios.get(verifyUrl, {
+        params: { username, password },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+        },
+        timeout: 15000,
+      });
+
+      const userInfo = response.data?.user_info;
+      if (userInfo && userInfo.status === 'Active') {
+        setVerificationStatus({
+          ...verificationStatus,
+          [userCode]: { status: true, message: 'IPTV OK' },
+        });
+        Alert.alert('✅ DNS OK', 'Le DNS et les identifiants sont valides !');
+      } else {
+        setVerificationStatus({
+          ...verificationStatus,
+          [userCode]: { status: false, message: 'Inactif' },
+        });
+        Alert.alert('⚠️ Compte inactif', 'Le compte IPTV est inactif ou expiré');
+      }
+    } catch (error: any) {
+      console.error('Error verifying DNS:', error);
+      setVerificationStatus({
+        ...verificationStatus,
+        [userCode]: { status: false, message: 'Erreur' },
+      });
+      
+      if (error.response?.status === 401) {
+        Alert.alert('❌ Erreur', 'Identifiants Xtream invalides');
+      } else if (error.code === 'ECONNABORTED') {
+        Alert.alert('❌ Timeout', 'Le serveur IPTV ne répond pas');
+      } else {
+        Alert.alert('❌ Erreur', 'Impossible de vérifier le DNS');
+      }
+    } finally {
+      setVerifyingUser(null);
+    }
+  };
+
+  const handleCopyCode = (code: string) => {
+    Clipboard.setString(code);
+    Alert.alert('✅ Copié', `Le code ${code} a été copié`);
+  };
+
   const filteredUsers = users.filter(user =>
     user.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (user.user_note && user.user_note.toLowerCase().includes(searchQuery.toLowerCase()))
