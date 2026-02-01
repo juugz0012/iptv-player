@@ -305,6 +305,26 @@ async def delete_user_code(code: str):
     
     return {"message": "User code deleted successfully"}
 
+class BulkDNSUpdate(BaseModel):
+    user_codes: list[str]
+    new_dns_url: str
+
+@api_router.post("/admin/bulk-update-dns")
+async def bulk_update_dns(input: BulkDNSUpdate):
+    """Admin: Update DNS for multiple users at once"""
+    if not input.user_codes or len(input.user_codes) == 0:
+        raise HTTPException(status_code=400, detail="No user codes provided")
+    
+    result = await db.user_codes.update_many(
+        {"code": {"$in": input.user_codes}},
+        {"$set": {"dns_url": input.new_dns_url}}
+    )
+    
+    return {
+        "message": f"DNS updated for {result.modified_count} user(s)",
+        "modified_count": result.modified_count
+    }
+
 @api_router.get("/admin/user-codes")
 async def list_user_codes_admin():
     """Admin: List all user codes"""
