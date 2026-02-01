@@ -25,7 +25,9 @@ export default function UsersManagementScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [verifyingUser, setVerifyingUser] = useState<string | null>(null);
-  const [verificationStatus, setVerificationStatus] = useState<{ [key: string]: { status: boolean; message: string } }>({});
+  const [verificationStatus, setVerificationStatus] = useState<{ [key: string]: { status: boolean; message: string; details?: any } }>({});
+  const [loadingPlaylist, setLoadingPlaylist] = useState<string | null>(null);
+  const [playlistProgress, setPlaylistProgress] = useState<{ [key: string]: number }>({});
   const router = useRouter();
 
   useEffect(() => {
