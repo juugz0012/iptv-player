@@ -633,6 +633,29 @@ ${userInfo.is_trial === '1' ? '🎁 Compte Trial' : ''}
                     )}
                   </TouchableOpacity>
 
+                  {/* Bouton Charger Playlist */}
+                  <TouchableOpacity
+                    style={styles.loadPlaylistButton}
+                    onPress={() => handleLoadPlaylist(user)}
+                    disabled={loadingPlaylist === user.code}
+                  >
+                    {loadingPlaylist === user.code ? (
+                      <View style={styles.loadingPlaylistContainer}>
+                        <View style={styles.progressBarContainer}>
+                          <View style={[styles.progressBar, { width: `${playlistProgress[user.code] || 0}%` }]} />
+                        </View>
+                        <Text style={styles.loadingPlaylistText}>
+                          Chargement... {playlistProgress[user.code] || 0}%
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <Ionicons name="download" size={20} color="#fff" />
+                        <Text style={styles.loadPlaylistButtonText}>Charger la Playlist</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
                   {/* Actions */}
                   <View style={styles.actionsContainer}>
                     <TouchableOpacity
