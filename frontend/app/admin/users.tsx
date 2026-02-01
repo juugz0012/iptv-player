@@ -723,4 +723,108 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 6,
   },
+  copyIconButton: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  statusColumn: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  iptvStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  iptvStatusOK: {
+    backgroundColor: '#00AA1320',
+    borderWidth: 1,
+    borderColor: '#00AA13',
+  },
+  iptvStatusKO: {
+    backgroundColor: '#E5091420',
+    borderWidth: 1,
+    borderColor: '#E50914',
+  },
+  iptvStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  iptvStatusTextOK: {
+    color: '#00AA13',
+  },
+  iptvStatusTextKO: {
+    color: '#E50914',
+  },
+  xtreamInfoBox: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#2196F3',
+  },
+  xtreamInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  xtreamRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  xtreamLabel: {
+    fontSize: 13,
+    color: '#888',
+    width: 90,
+  },
+  xtreamValue: {
+    flex: 1,
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  noteBox: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#E50914',
+  },
+  noteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
+  },
+  noteLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#E50914',
+  },
+  noteText: {
+    fontSize: 13,
+    color: '#ccc',
+    lineHeight: 18,
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
 });
