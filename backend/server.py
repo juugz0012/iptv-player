@@ -243,7 +243,8 @@ async def create_user_code_admin(input: UserCodeCreate):
         "code": code,
         "created_at": datetime.utcnow(),
         "is_active": True,
-        "max_profiles": input.max_profiles
+        "max_profiles": input.max_profiles,
+        "user_note": input.user_note or ""
     }
     
     await db.user_codes.insert_one(user_code_dict)
