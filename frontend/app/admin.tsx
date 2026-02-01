@@ -322,6 +322,13 @@ export default function AdminScreen() {
                   <Text style={styles.infoLabel}>Profils max :</Text>
                   <Text style={styles.infoValue}>{maxProfiles}</Text>
                 </View>
+
+                {accountInfo.user_note && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Note :</Text>
+                    <Text style={styles.infoValue}>{accountInfo.user_note}</Text>
+                  </View>
+                )}
               </View>
             )}
 
