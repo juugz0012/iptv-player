@@ -101,11 +101,10 @@ export default function MoviesScreen() {
 
   const handleMoviePress = (movie: VODStream) => {
     router.push({
-      pathname: '/player',
+      pathname: '/movie-details',
       params: {
         streamId: movie.stream_id.toString(),
         streamType: 'movie',
-        title: movie.name,
       },
     });
   };
