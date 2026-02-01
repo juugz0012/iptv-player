@@ -235,6 +235,102 @@ ${userInfo.is_trial === '1' ? '🎁 Compte Trial' : ''}
     Alert.alert('✅ Copié', `Le code ${code} a été copié`);
   };
 
+  const handleLoadPlaylist = async (user: any) => {
+    try {
+      setLoadingPlaylist(user.code);
+      setPlaylistProgress({ ...playlistProgress, [user.code]: 0 });
+
+      if (!user.dns_url || !user.xtream_username || !user.xtream_password) {
+        Alert.alert('Erreur', 'Identifiants Xtream incomplets');
+        setLoadingPlaylist(null);
+        return;
+      }
+
+      const baseUrl = `${user.dns_url}/player_api.php`;
+      const params = {
+        username: user.xtream_username,
+        password: user.xtream_password,
+      };
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+      };
+
+      let totalProgress = 0;
+      const updateProgress = (step: number) => {
+        totalProgress = step;
+        setPlaylistProgress({ ...playlistProgress, [user.code]: step });
+      };
+
+      // Étape 1: Charger les catégories Live (10%)
+      updateProgress(10);
+      const liveCategories = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_live_categories' },
+        headers,
+        timeout: 30000,
+      });
+
+      // Étape 2: Charger les catégories VOD (20%)
+      updateProgress(20);
+      const vodCategories = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_vod_categories' },
+        headers,
+        timeout: 30000,
+      });
+
+      // Étape 3: Charger les catégories Séries (30%)
+      updateProgress(30);
+      const seriesCategories = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_series_categories' },
+        headers,
+        timeout: 30000,
+      });
+
+      // Étape 4: Charger les streams Live (60%)
+      updateProgress(40);
+      const liveStreams = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_live_streams' },
+        headers,
+        timeout: 60000,
+      });
+      updateProgress(60);
+
+      // Étape 5: Charger les streams VOD (80%)
+      const vodStreams = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_vod_streams' },
+        headers,
+        timeout: 60000,
+      });
+      updateProgress(80);
+
+      // Étape 6: Charger les séries (100%)
+      const series = await axios.get(baseUrl, {
+        params: { ...params, action: 'get_series' },
+        headers,
+        timeout: 60000,
+      });
+      updateProgress(100);
+
+      // Résumé
+      const totalLive = liveStreams.data?.length || 0;
+      const totalVod = vodStreams.data?.length || 0;
+      const totalSeries = series.data?.length || 0;
+      const totalCategories = (liveCategories.data?.length || 0) + (vodCategories.data?.length || 0) + (seriesCategories.data?.length || 0);
+
+      Alert.alert(
+        '✅ Playlist chargée !',
+        `📊 Résumé :\n\n📺 Chaînes Live : ${totalLive}\n🎬 Films : ${totalVod}\n📺 Séries : ${totalSeries}\n📁 Catégories : ${totalCategories}`,
+        [{ text: 'OK' }]
+      );
+
+    } catch (error: any) {
+      console.error('Error loading playlist:', error);
+      Alert.alert('❌ Erreur', 'Impossible de charger la playlist. Vérifiez les identifiants.');
+    } finally {
+      setLoadingPlaylist(null);
+      setPlaylistProgress({ ...playlistProgress, [user.code]: 0 });
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (user.user_note && user.user_note.toLowerCase().includes(searchQuery.toLowerCase()))
