@@ -88,6 +88,9 @@ export default function UsersManagementScreen() {
       ...user,
       editMaxProfiles: user.max_profiles.toString(),
       editNote: user.user_note || '',
+      editDns: user.dns_url || '',
+      editUsername: user.xtream_username || '',
+      editPassword: user.xtream_password || '',
     });
   };
 
