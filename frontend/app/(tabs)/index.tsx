@@ -119,6 +119,29 @@ export default function HomeScreen() {
           </Text>
         </View>
 
+        {/* Bouton Charger Playlist */}
+        <View style={styles.loadPlaylistSection}>
+          <TouchableOpacity
+            style={styles.loadPlaylistButton}
+            onPress={handleLoadPlaylist}
+            disabled={loadingPlaylist}
+          >
+            {loadingPlaylist ? (
+              <View style={styles.loadingContainer}>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBar, { width: `${progress}%` }]} />
+                </View>
+                <Text style={styles.loadingText}>Chargement... {progress}%</Text>
+              </View>
+            ) : (
+              <>
+                <Ionicons name="refresh-circle" size={28} color="#fff" />
+                <Text style={styles.loadPlaylistButtonText}>Charger / Rafraîchir la Playlist</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.categoriesContainer}>
           {categories.map((category, index) => (
             <TouchableOpacity
