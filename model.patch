@@ -84,7 +84,7 @@ index a6fa227..e69de29 100644
 ---+import requests
 ---+import json
 ---+
----+BASE_URL = "https://telecast-hub-12.preview.emergentagent.com/api"
+---+BASE_URL = "https://iptv-player-48.preview.emergentagent.com/api"
 ---+
 ---+# Test the specific failing cases
 ---+print("Testing specific failing cases...")
