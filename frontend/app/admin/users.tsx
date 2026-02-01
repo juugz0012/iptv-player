@@ -458,6 +458,46 @@ ${userInfo.is_trial === '1' ? '🎁 Compte Trial' : ''}
                     </View>
                   </View>
 
+                  {/* Informations IPTV (après vérification) */}
+                  {verificationStatus[user.code]?.details && (
+                    <View style={styles.iptvDetailsBox}>
+                      <Text style={styles.iptvDetailsTitle}>📊 Informations IPTV :</Text>
+                      <View style={styles.xtreamRow}>
+                        <Text style={styles.xtreamLabel}>Statut:</Text>
+                        <Text style={[
+                          styles.xtreamValue,
+                          verificationStatus[user.code].status ? styles.statusActiveText : styles.statusInactiveText
+                        ]}>
+                          {verificationStatus[user.code].details.accountStatus}
+                        </Text>
+                      </View>
+                      <View style={styles.xtreamRow}>
+                        <Text style={styles.xtreamLabel}>Expiration:</Text>
+                        <Text style={styles.xtreamValue}>{verificationStatus[user.code].details.expiration}</Text>
+                      </View>
+                      <View style={styles.xtreamRow}>
+                        <Text style={styles.xtreamLabel}>Connexions max:</Text>
+                        <Text style={styles.xtreamValue}>{verificationStatus[user.code].details.maxConnections}</Text>
+                      </View>
+                      <View style={styles.xtreamRow}>
+                        <Text style={styles.xtreamLabel}>Actives maintenant:</Text>
+                        <Text style={[
+                          styles.xtreamValue,
+                          parseInt(verificationStatus[user.code].details.activeConnections) > 0 ? styles.statusOnlineText : {}
+                        ]}>
+                          {verificationStatus[user.code].details.activeConnections}
+                          {parseInt(verificationStatus[user.code].details.activeConnections) > 0 ? ' 🟢 En ligne' : ' ⚫ Hors ligne'}
+                        </Text>
+                      </View>
+                      {verificationStatus[user.code].details.isTrial === '1' && (
+                        <View style={styles.trialBadge}>
+                          <Ionicons name="gift" size={16} color="#FFA500" />
+                          <Text style={styles.trialText}>Compte Trial</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
                   {/* Informations utilisateur */}
                   <View style={styles.userInfo}>
                     <View style={styles.infoRow}>
