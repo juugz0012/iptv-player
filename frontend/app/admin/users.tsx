@@ -913,4 +913,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
   },
+  iptvDetailsBox: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  iptvDetailsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  statusActiveText: {
+    color: '#00AA13',
+    fontWeight: 'bold',
+  },
+  statusInactiveText: {
+    color: '#E50914',
+    fontWeight: 'bold',
+  },
+  statusOnlineText: {
+    color: '#00AA13',
+    fontWeight: 'bold',
+  },
+  trialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFA50020',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 8,
+    gap: 6,
+  },
+  trialText: {
+    fontSize: 13,
+    color: '#FFA500',
+    fontWeight: '600',
+  },
 });
