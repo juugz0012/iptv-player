@@ -421,6 +421,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
   },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+    paddingTop: 16,
+  },
   createButton: {
     flexDirection: 'row',
     backgroundColor: '#E50914',
