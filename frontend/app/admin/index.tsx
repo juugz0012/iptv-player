@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,26 @@ export default function AdminLoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  const checkExistingSession = async () => {
+    try {
+      const isLoggedIn = await AsyncStorage.getItem('admin_logged_in');
+      if (isLoggedIn === 'true') {
+        // Rediriger automatiquement vers le dashboard
+        router.replace('/admin/dashboard');
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!password) {
@@ -43,6 +62,16 @@ export default function AdminLoginScreen() {
       setLoading(false);
     }, 500);
   };
+
+  // Afficher un loader pendant la vérification de session
+  if (checking) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#E50914" />
+        <Text style={styles.checkingText}>Vérification...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
