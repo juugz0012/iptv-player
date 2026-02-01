@@ -118,11 +118,12 @@ async def get_xtream_config_admin():
     if not config:
         return {"configured": False}
     
-    # Don't send password to frontend for security
+    # Return password as app needs it for direct API calls
     return {
         "configured": True,
         "id": config["id"],
         "username": config["username"],
+        "password": config["password"],
         "dns_url": config["dns_url"],
         "samsung_lg_dns": config.get("samsung_lg_dns"),
         "created_at": config["created_at"]
