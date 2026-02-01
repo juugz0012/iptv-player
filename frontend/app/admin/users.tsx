@@ -355,19 +355,64 @@ export default function UsersManagementScreen() {
               ) : (
                 // Mode affichage
                 <>
+                  {/* Header avec Code et Statut */}
                   <View style={styles.userHeader}>
                     <View style={styles.codeContainer}>
                       <Text style={styles.codeLabel}>Code:</Text>
                       <Text style={styles.codeText}>{user.code}</Text>
+                      <TouchableOpacity
+                        style={styles.copyIconButton}
+                        onPress={() => handleCopyCode(user.code)}
+                      >
+                        <Ionicons name="copy-outline" size={20} color="#2196F3" />
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.statusBadge}>
-                      <View style={[styles.statusDot, user.is_active && styles.statusDotActive]} />
-                      <Text style={styles.statusText}>
-                        {user.is_active ? 'Actif' : 'Inactif'}
-                      </Text>
+                    <View style={styles.statusColumn}>
+                      <View style={styles.statusBadge}>
+                        <View style={[styles.statusDot, user.is_active && styles.statusDotActive]} />
+                        <Text style={styles.statusText}>
+                          {user.is_active ? 'Actif' : 'Inactif'}
+                        </Text>
+                      </View>
+                      {verificationStatus[user.code] && (
+                        <View style={[
+                          styles.iptvStatusBadge,
+                          verificationStatus[user.code].status ? styles.iptvStatusOK : styles.iptvStatusKO
+                        ]}>
+                          <Ionicons 
+                            name={verificationStatus[user.code].status ? 'checkmark-circle' : 'close-circle'}
+                            size={14} 
+                            color={verificationStatus[user.code].status ? '#00AA13' : '#E50914'} 
+                          />
+                          <Text style={[
+                            styles.iptvStatusText,
+                            verificationStatus[user.code].status ? styles.iptvStatusTextOK : styles.iptvStatusTextKO
+                          ]}>
+                            {verificationStatus[user.code].message}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
 
+                  {/* Identifiants Xtream */}
+                  <View style={styles.xtreamInfoBox}>
+                    <Text style={styles.xtreamInfoTitle}>Identifiants Xtream :</Text>
+                    <View style={styles.xtreamRow}>
+                      <Text style={styles.xtreamLabel}>DNS:</Text>
+                      <Text style={styles.xtreamValue} numberOfLines={1}>{user.dns_url || 'Non configuré'}</Text>
+                    </View>
+                    <View style={styles.xtreamRow}>
+                      <Text style={styles.xtreamLabel}>Username:</Text>
+                      <Text style={styles.xtreamValue}>{user.xtream_username || 'Non configuré'}</Text>
+                    </View>
+                    <View style={styles.xtreamRow}>
+                      <Text style={styles.xtreamLabel}>Password:</Text>
+                      <Text style={styles.xtreamValue}>{'•'.repeat(Math.min((user.xtream_password || '').length, 12))}</Text>
+                    </View>
+                  </View>
+
+                  {/* Informations utilisateur */}
                   <View style={styles.userInfo}>
                     <View style={styles.infoRow}>
                       <Ionicons name="calendar" size={16} color="#888" />
@@ -378,15 +423,33 @@ export default function UsersManagementScreen() {
                       <Text style={styles.infoText}>Profils max: {user.max_profiles}</Text>
                     </View>
                     {user.user_note && (
-                      <View style={styles.infoRow}>
-                        <Ionicons name="document-text" size={16} color="#888" />
-                        <Text style={styles.infoText} numberOfLines={2}>
-                          {user.user_note}
-                        </Text>
+                      <View style={styles.noteBox}>
+                        <View style={styles.noteHeader}>
+                          <Ionicons name="document-text" size={16} color="#E50914" />
+                          <Text style={styles.noteLabel}>Note:</Text>
+                        </View>
+                        <Text style={styles.noteText}>{user.user_note}</Text>
                       </View>
                     )}
                   </View>
 
+                  {/* Bouton Vérifier DNS */}
+                  <TouchableOpacity
+                    style={styles.verifyButton}
+                    onPress={() => handleVerifyDNS(user)}
+                    disabled={verifyingUser === user.code}
+                  >
+                    {verifyingUser === user.code ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="shield-checkmark" size={20} color="#fff" />
+                        <Text style={styles.verifyButtonText}>Vérifier DNS IPTV</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Actions */}
                   <View style={styles.actionsContainer}>
                     <TouchableOpacity
                       style={styles.actionButton}
