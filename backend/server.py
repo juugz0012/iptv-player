@@ -56,6 +56,7 @@ class UserCode(BaseModel):
 
 class UserCodeCreate(BaseModel):
     max_profiles: int = 5
+    user_note: Optional[str] = None
 
 class Profile(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
