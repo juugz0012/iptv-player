@@ -150,24 +150,70 @@ export default function UsersManagementScreen() {
       });
 
       const userInfo = response.data?.user_info;
-      if (userInfo && userInfo.status === 'Active') {
+      const serverInfo = response.data?.server_info;
+      
+      if (userInfo) {
+        // Formater la date d'expiration
+        let expirationDate = 'Inconnue';
+        if (userInfo.exp_date) {
+          try {
+            const expDate = new Date(parseInt(userInfo.exp_date) * 1000);
+            expirationDate = expDate.toLocaleDateString('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          } catch (e) {
+            expirationDate = userInfo.exp_date;
+          }
+        }
+
+        // Déterminer le statut
+        const isActive = userInfo.status === 'Active';
+        const statusMessage = isActive ? 'IPTV OK' : `${userInfo.status || 'Inactif'}`;
+
         setVerificationStatus({
           ...verificationStatus,
-          [user.code]: { status: true, message: 'IPTV OK' },
+          [user.code]: { 
+            status: isActive,
+            message: statusMessage,
+            details: {
+              expiration: expirationDate,
+              maxConnections: userInfo.max_connections || 'N/A',
+              activeConnections: userInfo.active_cons || '0',
+              accountStatus: userInfo.status || 'Inconnu',
+              isTrial: userInfo.is_trial || '0',
+              createdAt: userInfo.created_at || 'Inconnu',
+            }
+          },
         });
-        Alert.alert('✅ DNS OK', 'Le DNS et les identifiants sont valides !');
+        
+        // Construire le message d'alerte avec toutes les infos
+        const alertMessage = `
+✅ Connexion réussie !
+
+📊 Statut: ${userInfo.status || 'Inconnu'}
+📅 Expiration: ${expirationDate}
+🔗 Connexions max: ${userInfo.max_connections || 'N/A'}
+⚡ Connexions actives: ${userInfo.active_cons || '0'}
+${userInfo.is_trial === '1' ? '🎁 Compte Trial' : ''}
+        `.trim();
+        
+        Alert.alert('✅ DNS OK', alertMessage);
       } else {
         setVerificationStatus({
           ...verificationStatus,
-          [user.code]: { status: false, message: 'Inactif' },
+          [user.code]: { status: false, message: 'Aucune info', details: null },
         });
-        Alert.alert('⚠️ Compte inactif', 'Le compte IPTV est inactif ou expiré');
+        Alert.alert('⚠️ Réponse incomplète', 'Impossible de récupérer les informations du compte');
       }
     } catch (error: any) {
       console.error('Error verifying DNS:', error);
       setVerificationStatus({
         ...verificationStatus,
-        [user.code]: { status: false, message: 'Erreur' },
+        [user.code]: { status: false, message: 'Erreur', details: null },
       });
       
       if (error.response?.status === 401) {
