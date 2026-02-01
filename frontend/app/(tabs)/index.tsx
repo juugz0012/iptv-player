@@ -45,6 +45,56 @@ export default function HomeScreen() {
     },
   ];
 
+  const handleLoadPlaylist = async () => {
+    try {
+      setLoadingPlaylist(true);
+      setProgress(0);
+
+      // Étape 1: Charger les catégories Live (20%)
+      setProgress(20);
+      const liveCategories = await xtreamAPI.getLiveCategories();
+
+      // Étape 2: Charger les catégories VOD (40%)
+      setProgress(40);
+      const vodCategories = await xtreamAPI.getVodCategories();
+
+      // Étape 3: Charger les catégories Séries (60%)
+      setProgress(60);
+      const seriesCategories = await xtreamAPI.getSeriesCategories();
+
+      // Étape 4: Charger les streams Live (80%)
+      setProgress(80);
+      const liveStreams = await xtreamAPI.getLiveStreams();
+
+      // Étape 5: Charger les streams VOD (90%)
+      setProgress(90);
+      const vodStreams = await xtreamAPI.getVodStreams();
+
+      // Étape 6: Charger les séries (100%)
+      setProgress(100);
+      const series = await xtreamAPI.getSeriesStreams();
+
+      // Résumé
+      const totalLive = liveStreams.data?.length || 0;
+      const totalVod = vodStreams.data?.length || 0;
+      const totalSeries = series.data?.length || 0;
+      const totalCategories = (liveCategories.data?.length || 0) + (vodCategories.data?.length || 0) + (seriesCategories.data?.length || 0);
+
+      Alert.alert(
+        '✅ Playlist chargée !',
+        `📊 Résumé :\n\n📺 Chaînes Live : ${totalLive}\n🎬 Films : ${totalVod}\n📺 Séries : ${totalSeries}\n📁 Catégories : ${totalCategories}`,
+        [{ text: 'OK' }]
+      );
+
+    } catch (error: any) {
+      console.error('Error loading playlist:', error);
+      Alert.alert('❌ Erreur', 'Impossible de charger la playlist');
+    } finally {
+      setLoadingPlaylist(false);
+      setProgress(0);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
