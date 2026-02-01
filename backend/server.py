@@ -234,7 +234,7 @@ async def create_user_with_xtream(config: XtreamConfig, max_profiles: int = 5):
 
 @api_router.post("/admin/user-codes")
 async def create_user_code_admin(input: UserCodeCreate):
-    """Admin: Generate a new user code"""
+    """Admin: Generate a new user code with Xtream credentials"""
     # Generate unique code
     while True:
         code = generate_user_code()
@@ -247,7 +247,10 @@ async def create_user_code_admin(input: UserCodeCreate):
         "created_at": datetime.utcnow(),
         "is_active": True,
         "max_profiles": input.max_profiles,
-        "user_note": input.user_note or ""
+        "user_note": input.user_note or "",
+        "dns_url": input.dns_url,
+        "xtream_username": input.xtream_username,
+        "xtream_password": input.xtream_password
     }
     
     await db.user_codes.insert_one(user_code_dict)
