@@ -93,7 +93,7 @@ export default function AdminScreen() {
       });
 
       // Step 3: Generate user code with note
-      const codeResponse = await adminAPI.createUserCode(profiles);
+      const codeResponse = await adminAPI.createUserCode(profiles, userNote.trim());
 
       setGeneratedCode(codeResponse.data.code);
       setAccountInfo({
