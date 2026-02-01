@@ -24,6 +24,7 @@ export default function AdminScreen() {
   const [loading, setLoading] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [accountInfo, setAccountInfo] = useState<any>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const router = useRouter();
 
