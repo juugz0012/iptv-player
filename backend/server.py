@@ -256,6 +256,47 @@ async def create_user_code_admin(input: UserCodeCreate):
     }
 
 @api_router.get("/admin/user-codes")
+async def get_all_user_codes():
+    """Admin: Get all user codes"""
+    codes = await db.user_codes.find().sort("created_at", -1).to_list(length=1000)
+    
+    # Convert ObjectId to string for JSON serialization
+    for code in codes:
+        if '_id' in code:
+            code['_id'] = str(code['_id'])
+        # Format created_at
+        if 'created_at' in code and code['created_at']:
+            code['created_at'] = code['created_at'].isoformat()
+    
+    return codes
+
+@api_router.put("/admin/user-codes/{code}")
+async def update_user_code(code: str, input: UserCodeCreate):
+    """Admin: Update user code details"""
+    result = await db.user_codes.update_one(
+        {"code": code},
+        {"$set": {
+            "max_profiles": input.max_profiles,
+            "user_note": input.user_note or ""
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User code not found")
+    
+    return {"message": "User code updated successfully"}
+
+@api_router.delete("/admin/user-codes/{code}")
+async def delete_user_code(code: str):
+    """Admin: Delete a user code"""
+    result = await db.user_codes.delete_one({"code": code})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User code not found")
+    
+    return {"message": "User code deleted successfully"}
+
+@api_router.get("/admin/user-codes")
 async def list_user_codes_admin():
     """Admin: List all user codes"""
     codes = await db.user_codes.find().sort("created_at", -1).to_list(1000)
