@@ -129,6 +129,105 @@ async def get_xtream_config_admin():
         "created_at": config["created_at"]
     }
 
+@api_router.post("/admin/create-user-with-xtream")
+async def create_user_with_xtream(config: XtreamConfig, max_profiles: int = 5):
+    """Admin: Verify Xtream config, save it, and create user code in one step"""
+    
+    # Step 1: Test the Xtream connection
+    url = f"{config.dns_url}/player_api.php"
+    params = {
+        "username": config.username,
+        "password": config.password
+    }
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            account_info = response.json()
+            
+            # Extract user info
+            user_info = account_info.get("user_info", {})
+            expiration_timestamp = user_info.get("exp_date")
+            
+            if not user_info:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Impossible de récupérer les informations du compte. Vérifiez vos identifiants."
+                )
+            
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Erreur HTTP {e.response.status_code}: Identifiants invalides ou DNS incorrect"
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=400,
+            detail="Timeout: Le serveur IPTV ne répond pas. Vérifiez le DNS."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Erreur de connexion: {str(e)}"
+        )
+    
+    # Step 2: Save the Xtream config
+    # Deactivate all existing configs
+    await db.xtream_config.update_many({}, {"$set": {"is_active": False}})
+    
+    config_dict = config.dict()
+    config_dict["id"] = str(uuid.uuid4())
+    config_dict["created_at"] = datetime.utcnow()
+    config_dict["is_active"] = True
+    config_dict["expiration_date"] = expiration_timestamp
+    
+    await db.xtream_config.insert_one(config_dict)
+    
+    # Step 3: Generate unique user code
+    while True:
+        code = generate_user_code()
+        existing = await db.user_codes.find_one({"code": code})
+        if not existing:
+            break
+    
+    user_code_dict = {
+        "code": code,
+        "created_at": datetime.utcnow(),
+        "is_active": True,
+        "max_profiles": max_profiles,
+        "xtream_config_id": config_dict["id"]
+    }
+    
+    await db.user_codes.insert_one(user_code_dict)
+    
+    # Format expiration date for display
+    expiration_date_str = None
+    if expiration_timestamp:
+        try:
+            exp_date = datetime.fromtimestamp(int(expiration_timestamp))
+            expiration_date_str = exp_date.strftime("%d/%m/%Y %H:%M")
+        except:
+            expiration_date_str = "Inconnue"
+    
+    return {
+        "success": True,
+        "code": code,
+        "max_profiles": max_profiles,
+        "xtream_info": {
+            "username": user_info.get("username"),
+            "status": user_info.get("status"),
+            "expiration_date": expiration_date_str,
+            "expiration_timestamp": expiration_timestamp,
+            "max_connections": user_info.get("max_connections"),
+            "active_connections": user_info.get("active_cons")
+        }
+    }
+
 @api_router.post("/admin/user-codes")
 async def create_user_code_admin(input: UserCodeCreate):
     """Admin: Generate a new user code"""
