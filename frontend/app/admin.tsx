@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,170 +8,86 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  FlatList,
-  Modal,
+  Platform,
+  Clipboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { adminAPI } from '../utils/api';
 
-interface UserCode {
-  code: string;
-  created_at: string;
-  is_active: boolean;
-  max_profiles: number;
-  profile_count: number;
-}
-
 export default function AdminScreen() {
+  const [dnsUrl, setDnsUrl] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [dnsUrl, setDnsUrl] = useState('');
-  const [samsungLgDns, setSamsungLgDns] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [configured, setConfigured] = useState(false);
-  const [userCodes, setUserCodes] = useState<UserCode[]>([]);
-  const [loadingCodes, setLoadingCodes] = useState(false);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [maxProfiles, setMaxProfiles] = useState('5');
-  const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [accountInfo, setAccountInfo] = useState<any>(null);
   
   const router = useRouter();
 
-  useEffect(() => {
-    loadConfig();
-    loadUserCodes();
-  }, []);
-
-  const loadConfig = async () => {
-    try {
-      const response = await adminAPI.getXtreamConfig();
-      if (response.data.configured) {
-        setConfigured(true);
-        setUsername(response.data.username);
-        setDnsUrl(response.data.dns_url);
-        setSamsungLgDns(response.data.samsung_lg_dns || '');
-      }
-    } catch (error) {
-      console.error('Error loading config:', error);
-    }
-  };
-
-  const loadUserCodes = async () => {
-    try {
-      setLoadingCodes(true);
-      const response = await adminAPI.listUserCodes();
-      setUserCodes(response.data);
-    } catch (error) {
-      console.error('Error loading user codes:', error);
-    } finally {
-      setLoadingCodes(false);
-    }
-  };
-
-  const handleSaveConfig = async () => {
-    if (!username || !password || !dnsUrl) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+  const handleCreateUser = async () => {
+    // Validation
+    if (!dnsUrl || !username || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires (DNS, Username, Password)');
       return;
     }
 
-    try {
-      setSaving(true);
-      await adminAPI.saveXtreamConfig({
-        username,
-        password,
-        dns_url: dnsUrl,
-        samsung_lg_dns: samsungLgDns || undefined,
-      });
-      Alert.alert('Succès', 'Configuration enregistrée avec succès');
-      setConfigured(true);
-    } catch (error: any) {
-      console.error('Error saving config:', error);
-      Alert.alert(
-        'Erreur',
-        error.response?.data?.detail || 'Impossible d\'enregistrer la configuration'
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleGenerateCode = async () => {
-    const profileCount = parseInt(maxProfiles);
-    if (isNaN(profileCount) || profileCount < 1 || profileCount > 10) {
+    const profiles = parseInt(maxProfiles);
+    if (isNaN(profiles) || profiles < 1 || profiles > 10) {
       Alert.alert('Erreur', 'Le nombre de profils doit être entre 1 et 10');
       return;
     }
 
     try {
-      setGenerating(true);
-      const response = await adminAPI.createUserCode(profileCount);
-      Alert.alert(
-        'Code généré',
-        `Nouveau code utilisateur : ${response.data.code}`,
-        [{ text: 'OK', onPress: () => {
-          setShowGenerateModal(false);
-          setMaxProfiles('5');
-          loadUserCodes();
-        }}]
+      setLoading(true);
+      setGeneratedCode(null);
+      setAccountInfo(null);
+
+      const response = await adminAPI.createUserWithXtream(
+        {
+          dns_url: dnsUrl.trim(),
+          username: username.trim(),
+          password: password.trim(),
+        },
+        profiles
       );
+
+      if (response.data.success) {
+        setGeneratedCode(response.data.code);
+        setAccountInfo(response.data.xtream_info);
+        
+        Alert.alert(
+          '✅ Utilisateur créé !',
+          `Code généré: ${response.data.code}\n\nExpiration: ${response.data.xtream_info.expiration_date || 'Inconnue'}`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (error: any) {
-      console.error('Error generating code:', error);
-      Alert.alert(
-        'Erreur',
-        error.response?.data?.detail || 'Impossible de générer le code'
-      );
+      console.error('Error creating user:', error);
+      const errorMessage = error.response?.data?.detail || 'Erreur lors de la création de l\'utilisateur';
+      Alert.alert('Erreur', errorMessage);
     } finally {
-      setGenerating(false);
+      setLoading(false);
     }
   };
 
-  const handleDeleteCode = (code: string) => {
-    Alert.alert(
-      'Désactiver le code',
-      `Êtes-vous sûr de vouloir désactiver le code ${code} ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Désactiver',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await adminAPI.deleteUserCode(code);
-              Alert.alert('Succès', 'Code désactivé avec succès');
-              loadUserCodes();
-            } catch (error) {
-              console.error('Error deleting code:', error);
-              Alert.alert('Erreur', 'Impossible de désactiver le code');
-            }
-          },
-        },
-      ]
-    );
+  const handleCopyCode = () => {
+    if (generatedCode) {
+      Clipboard.setString(generatedCode);
+      Alert.alert('✅ Copié', 'Le code a été copié dans le presse-papiers');
+    }
   };
 
-  const renderUserCode = ({ item }: { item: UserCode }) => (
-    <View style={styles.codeCard}>
-      <View style={styles.codeHeader}>
-        <Text style={styles.codeText}>{item.code}</Text>
-        <TouchableOpacity onPress={() => handleDeleteCode(item.code)}>
-          <Ionicons name="trash" size={24} color="#E50914" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.codeInfo}>
-        <Text style={styles.codeInfoText}>
-          Profils: {item.profile_count} / {item.max_profiles}
-        </Text>
-        <Text style={styles.codeInfoText}>
-          Créé: {new Date(item.created_at).toLocaleDateString()}
-        </Text>
-      </View>
-      {!item.is_active && (
-        <Text style={styles.inactiveLabel}>INACTIF</Text>
-      )}
-    </View>
-  );
+  const handleReset = () => {
+    setGeneratedCode(null);
+    setAccountInfo(null);
+    setDnsUrl('');
+    setUsername('');
+    setPassword('');
+    setMaxProfiles('5');
+  };
 
   return (
     <View style={styles.container}>
@@ -181,141 +97,162 @@ export default function AdminScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Panneau Admin</Text>
+        <Text style={styles.title}>Panel Administrateur</Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Configuration Xtream Codes</Text>
-          
-          <Text style={styles.label}>Nom d'utilisateur *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            placeholderTextColor="#666"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        {!generatedCode ? (
+          <>
+            {/* Formulaire de création */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>📡 Identifiants Xtream Codes</Text>
+              
+              <Text style={styles.label}>DNS / URL du serveur *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="http://example.com"
+                placeholderTextColor="#666"
+                value={dnsUrl}
+                onChangeText={setDnsUrl}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
 
-          <Text style={styles.label}>Mot de passe *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#666"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+              <Text style={styles.label}>Username *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Votre username"
+                placeholderTextColor="#666"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
 
-          <Text style={styles.label}>DNS URL *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="http://example.com"
-            placeholderTextColor="#666"
-            value={dnsUrl}
-            onChangeText={setDnsUrl}
-            autoCapitalize="none"
-          />
-
-          <Text style={styles.label}>Samsung/LG DNS (optionnel)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="http://example.com"
-            placeholderTextColor="#666"
-            value={samsungLgDns}
-            onChangeText={setSamsungLgDns}
-            autoCapitalize="none"
-          />
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSaveConfig}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {configured ? 'Mettre à jour' : 'Enregistrer'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Codes Utilisateurs</Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setShowGenerateModal(true)}
-            >
-              <Ionicons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {loadingCodes ? (
-            <ActivityIndicator size="large" color="#E50914" />
-          ) : userCodes.length > 0 ? (
-            <FlatList
-              data={userCodes}
-              keyExtractor={(item) => item.code}
-              renderItem={renderUserCode}
-              scrollEnabled={false}
-            />
-          ) : (
-            <Text style={styles.emptyText}>Aucun code utilisateur généré</Text>
-          )}
-        </View>
-      </ScrollView>
-
-      <Modal
-        visible={showGenerateModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowGenerateModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Générer un code</Text>
-
-            <Text style={styles.label}>Nombre maximum de profils</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="5"
-              placeholderTextColor="#666"
-              value={maxProfiles}
-              onChangeText={setMaxProfiles}
-              keyboardType="numeric"
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => {
-                  setShowGenerateModal(false);
-                  setMaxProfiles('5');
-                }}
-              >
-                <Text style={styles.modalButtonText}>Annuler</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
-                onPress={handleGenerateCode}
-                disabled={generating}
-              >
-                {generating ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>Générer</Text>
-                )}
-              </TouchableOpacity>
+              <Text style={styles.label}>Password *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Votre password"
+                placeholderTextColor="#666"
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
             </View>
-          </View>
-        </View>
-      </Modal>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>👥 Configuration Utilisateur</Text>
+              
+              <Text style={styles.label}>Nombre max de profils</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="5"
+                placeholderTextColor="#666"
+                value={maxProfiles}
+                onChangeText={setMaxProfiles}
+                keyboardType="number-pad"
+              />
+              <Text style={styles.helpText}>
+                Combien de profils cet utilisateur pourra créer (1-10)
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.createButton, loading && styles.buttonDisabled]}
+              onPress={handleCreateUser}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                  <Text style={styles.buttonText}>Créer l'utilisateur</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={24} color="#E50914" />
+              <Text style={styles.infoText}>
+                En cliquant sur "Créer", l'application va :{'\n'}
+                • Vérifier la connexion au serveur IPTV{'\n'}
+                • Récupérer la date d'expiration{'\n'}
+                • Sauvegarder les identifiants{'\n'}
+                • Générer un code unique
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* Résultat de la création */}
+            <View style={styles.successSection}>
+              <Ionicons name="checkmark-circle" size={64} color="#00AA13" />
+              <Text style={styles.successTitle}>Utilisateur créé avec succès !</Text>
+            </View>
+
+            <View style={styles.codeSection}>
+              <Text style={styles.codeLabel}>Code utilisateur :</Text>
+              <View style={styles.codeBox}>
+                <Text style={styles.codeText}>{generatedCode}</Text>
+                <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
+                  <Ionicons name="copy" size={24} color="#fff" />
+                  <Text style={styles.copyButtonText}>Copier</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {accountInfo && (
+              <View style={styles.accountInfoSection}>
+                <Text style={styles.accountInfoTitle}>Informations du compte :</Text>
+                
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Username :</Text>
+                  <Text style={styles.infoValue}>{accountInfo.username}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Statut :</Text>
+                  <Text style={[styles.infoValue, accountInfo.status === 'Active' && styles.statusActive]}>
+                    {accountInfo.status || 'Inconnu'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Date d'expiration :</Text>
+                  <Text style={styles.infoValue}>
+                    {accountInfo.expiration_date || 'Inconnue'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Connexions max :</Text>
+                  <Text style={styles.infoValue}>
+                    {accountInfo.max_connections || 'N/A'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Profils max :</Text>
+                  <Text style={styles.infoValue}>{maxProfiles}</Text>
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <Ionicons name="add-circle" size={24} color="#fff" />
+              <Text style={styles.buttonText}>Créer un autre utilisateur</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backHomeButton} onPress={() => router.push('/')}>
+              <Ionicons name="home" size={24} color="#fff" />
+              <Text style={styles.buttonText}>Retour à l'accueil</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -344,25 +281,21 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  section: {
+  scrollContent: {
     padding: 16,
+  },
+  section: {
     marginBottom: 24,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 16,
   },
   label: {
     fontSize: 14,
-    color: '#888',
+    color: '#ccc',
     marginBottom: 8,
     marginTop: 12,
   },
@@ -375,103 +308,140 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  button: {
+  helpText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+  },
+  createButton: {
+    flexDirection: 'row',
     backgroundColor: '#E50914',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 24,
+    marginBottom: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 8,
   },
-  addButton: {
-    backgroundColor: '#E50914',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  codeCard: {
-    backgroundColor: '#222',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  codeHeader: {
+  infoBox: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#E50914',
   },
-  codeText: {
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#ccc',
+    marginLeft: 12,
+    lineHeight: 20,
+  },
+  successSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 16,
+  },
+  successTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#00AA13',
+    marginTop: 16,
+    textAlign: 'center',
   },
-  codeInfo: {
+  codeSection: {
+    marginBottom: 24,
+  },
+  codeLabel: {
+    fontSize: 16,
+    color: '#ccc',
+    marginBottom: 12,
+  },
+  codeBox: {
     flexDirection: 'row',
+    backgroundColor: '#222',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E50914',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  codeInfoText: {
+  codeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#E50914',
+    letterSpacing: 2,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    backgroundColor: '#E50914',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  accountInfoSection: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+  },
+  accountInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  infoLabel: {
     fontSize: 14,
     color: '#888',
   },
-  inactiveLabel: {
-    fontSize: 12,
-    color: '#E50914',
-    fontWeight: 'bold',
-    marginTop: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    padding: 32,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#222',
-    borderRadius: 12,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  infoValue: {
+    fontSize: 14,
     color: '#fff',
-    marginBottom: 20,
+    fontWeight: '600',
   },
-  modalButtons: {
+  statusActive: {
+    color: '#00AA13',
+  },
+  resetButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 6,
-  },
-  modalButtonCancel: {
-    backgroundColor: '#444',
-  },
-  modalButtonConfirm: {
     backgroundColor: '#E50914',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  backHomeButton: {
+    flexDirection: 'row',
+    backgroundColor: '#333',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
