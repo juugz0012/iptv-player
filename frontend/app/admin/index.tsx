@@ -149,6 +149,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#141414',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkingText: {
+    color: '#fff',
+    marginTop: 16,
+    fontSize: 16,
   },
   content: {
     flex: 1,
