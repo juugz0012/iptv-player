@@ -478,6 +478,126 @@ async def delete_profile(profile_id: str):
     
     return {"message": "Profile deleted successfully"}
 
+# ==================== WATCHLIST ROUTES ====================
+
+@api_router.post("/watchlist/add")
+async def add_to_watchlist(item: WatchlistAdd):
+    """Add a movie/series to user's watchlist"""
+    # Check if already in watchlist
+    existing = await db.watchlist.find_one({
+        "user_code": item.user_code,
+        "profile_name": item.profile_name,
+        "stream_id": item.stream_id
+    })
+    
+    if existing:
+        return {"message": "Already in watchlist", "already_exists": True}
+    
+    item_dict = item.dict()
+    item_dict["added_at"] = datetime.utcnow()
+    
+    await db.watchlist.insert_one(item_dict)
+    
+    return {"message": "Added to watchlist successfully", "already_exists": False}
+
+@api_router.delete("/watchlist/remove")
+async def remove_from_watchlist(user_code: str, profile_name: str, stream_id: str):
+    """Remove a movie/series from user's watchlist"""
+    result = await db.watchlist.delete_one({
+        "user_code": user_code,
+        "profile_name": profile_name,
+        "stream_id": stream_id
+    })
+    
+    if result.deleted_count == 0:
+        return {"message": "Item not found in watchlist", "success": False}
+    
+    return {"message": "Removed from watchlist successfully", "success": True}
+
+@api_router.get("/watchlist/{user_code}/{profile_name}")
+async def get_watchlist(user_code: str, profile_name: str):
+    """Get user's watchlist"""
+    items = await db.watchlist.find({
+        "user_code": user_code,
+        "profile_name": profile_name
+    }).sort("added_at", -1).to_list(1000)
+    
+    # Remove MongoDB's _id field
+    for item in items:
+        item.pop("_id", None)
+    
+    return items
+
+@api_router.get("/watchlist/check/{user_code}/{profile_name}/{stream_id}")
+async def check_watchlist(user_code: str, profile_name: str, stream_id: str):
+    """Check if item is in watchlist"""
+    exists = await db.watchlist.find_one({
+        "user_code": user_code,
+        "profile_name": profile_name,
+        "stream_id": stream_id
+    })
+    
+    return {"in_watchlist": exists is not None}
+
+# ==================== WATCH PROGRESS ROUTES ====================
+
+@api_router.post("/progress/update")
+async def update_watch_progress(progress: WatchProgressUpdate):
+    """Update watch progress for a movie/series"""
+    percentage = (progress.current_time / progress.duration * 100) if progress.duration > 0 else 0
+    
+    # Update or insert progress
+    await db.watch_progress.update_one(
+        {
+            "user_code": progress.user_code,
+            "profile_name": progress.profile_name,
+            "stream_id": progress.stream_id
+        },
+        {
+            "$set": {
+                "stream_type": progress.stream_type,
+                "current_time": progress.current_time,
+                "duration": progress.duration,
+                "percentage": percentage,
+                "last_watched": datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+    
+    return {"message": "Progress updated successfully", "percentage": percentage}
+
+@api_router.get("/progress/{user_code}/{profile_name}/{stream_id}")
+async def get_watch_progress(user_code: str, profile_name: str, stream_id: str):
+    """Get watch progress for a specific movie/series"""
+    progress = await db.watch_progress.find_one({
+        "user_code": user_code,
+        "profile_name": profile_name,
+        "stream_id": stream_id
+    })
+    
+    if not progress:
+        return {"has_progress": False}
+    
+    progress.pop("_id", None)
+    progress["has_progress"] = True
+    
+    return progress
+
+@api_router.get("/progress/{user_code}/{profile_name}")
+async def get_all_watch_progress(user_code: str, profile_name: str):
+    """Get all watch progress for a user"""
+    progress_list = await db.watch_progress.find({
+        "user_code": user_code,
+        "profile_name": profile_name
+    }).sort("last_watched", -1).to_list(1000)
+    
+    # Remove MongoDB's _id field
+    for progress in progress_list:
+        progress.pop("_id", None)
+    
+    return progress_list
+
 # ==================== XTREAM CODES PROXY ROUTES ====================
 
 @api_router.get("/xtream/info")
