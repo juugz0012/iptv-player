@@ -37,18 +37,13 @@ export default function PlayerScreen() {
   const { currentProfile, userCode } = useAuth();
 
   useEffect(() => {
-    // Lock to landscape for better viewing experience
-    if (Platform.OS !== 'web') {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    }
+    // Ne pas forcer l'orientation - laisser l'utilisateur choisir
+    // L'orientation sera gérée automatiquement par le système
 
     loadStream();
 
     return () => {
-      // Cleanup: unlock orientation and clear interval
-      if (Platform.OS !== 'web') {
-        ScreenOrientation.unlockAsync();
-      }
+      // Cleanup: clear interval
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
