@@ -8,10 +8,11 @@ import {
   Dimensions,
   Alert,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { xtreamAPI, progressAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,13 +22,10 @@ const { width, height } = Dimensions.get('window');
 export default function PlayerScreen() {
   const [streamUrl, setStreamUrl] = useState('');
   const [loading, setLoading] = useState(true);
-  const [paused, setPaused] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [buffering, setBuffering] = useState(false);
+  const [playbackTime, setPlaybackTime] = useState(0);
   
-  const videoRef = useRef<Video>(null);
+  const webViewRef = useRef<WebView>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   
   const router = useRouter();
@@ -36,16 +34,20 @@ export default function PlayerScreen() {
   const { currentProfile, userCode } = useAuth();
 
   useEffect(() => {
-    // Ne pas forcer l'orientation - laisser l'utilisateur choisir
-    // L'orientation sera gérée automatiquement par le système
-
     loadStream();
 
+    // Handle Android back button
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+
     return () => {
-      // Cleanup: clear interval
+      backHandler.remove();
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
+      saveProgress();
     };
   }, []);
 
@@ -58,12 +60,13 @@ export default function PlayerScreen() {
     }
   }, [showControls]);
 
-  // Save progress every 10 seconds
+  // Save progress every 15 seconds for movies
   useEffect(() => {
-    if (duration > 0 && !paused && streamType === 'movie') {
+    if (streamType === 'movie' && streamUrl) {
       progressInterval.current = setInterval(() => {
-        saveProgress();
-      }, 10000);
+        setPlaybackTime(prev => prev + 15);
+        saveProgress(playbackTime + 15);
+      }, 15000);
 
       return () => {
         if (progressInterval.current) {
@@ -71,13 +74,12 @@ export default function PlayerScreen() {
         }
       };
     }
-  }, [currentTime, duration, paused]);
+  }, [streamUrl, streamType]);
 
   const loadStream = async () => {
     try {
       setLoading(true);
       
-      // Build the stream URL according to Xtream Codes API format
       const response = await xtreamAPI.getStreamUrl(
         streamType as string,
         streamId as string
@@ -87,17 +89,14 @@ export default function PlayerScreen() {
       console.log('Stream URL:', url);
       setStreamUrl(url);
       
-      // If resume position is provided, seek to it after load
       if (resumePosition && parseFloat(resumePosition as string) > 0) {
-        setTimeout(() => {
-          seekToPosition(parseFloat(resumePosition as string) * 1000);
-        }, 1500);
+        setPlaybackTime(parseFloat(resumePosition as string));
       }
     } catch (error) {
       console.error('Error loading stream:', error);
       Alert.alert(
         '❌ Erreur',
-        'Impossible de charger le flux vidéo. Vérifiez votre connexion.',
+        'Impossible de charger le flux vidéo.',
         [{ text: 'Retour', onPress: () => router.back() }]
       );
     } finally {
@@ -105,64 +104,21 @@ export default function PlayerScreen() {
     }
   };
 
-  const saveProgress = async () => {
+  const saveProgress = async (currentTime?: number) => {
     if (!userCode || !currentProfile || streamType !== 'movie') return;
     
     try {
+      const timeToSave = currentTime || playbackTime;
       await progressAPI.updateProgress(
         userCode,
         currentProfile.name,
         streamId as string,
         streamType as string,
-        Math.floor(currentTime / 1000),
-        Math.floor(duration / 1000)
+        Math.floor(timeToSave),
+        7200 // Durée estimée de 2h par défaut
       );
     } catch (error) {
       console.error('Error saving progress:', error);
-    }
-  };
-
-  const seekToPosition = async (positionMillis: number) => {
-    try {
-      if (videoRef.current) {
-        await videoRef.current.setPositionAsync(positionMillis);
-      }
-    } catch (error) {
-      console.error('Error seeking:', error);
-    }
-  };
-
-  const handlePlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      if (status.error) {
-        console.error('Playback error:', status.error);
-        Alert.alert('❌ Erreur de lecture', 'Impossible de lire cette vidéo.');
-      }
-      return;
-    }
-
-    setCurrentTime(status.positionMillis || 0);
-    setDuration(status.durationMillis || 0);
-    setBuffering(status.isBuffering || false);
-    
-    // Auto-save when video ends
-    if (status.didJustFinish && streamType === 'movie') {
-      saveProgress();
-    }
-  };
-
-  const togglePlayPause = async () => {
-    try {
-      if (videoRef.current) {
-        if (paused) {
-          await videoRef.current.playAsync();
-        } else {
-          await videoRef.current.pauseAsync();
-        }
-        setPaused(!paused);
-      }
-    } catch (error) {
-      console.error('Error toggling play/pause:', error);
     }
   };
 
@@ -171,35 +127,143 @@ export default function PlayerScreen() {
   };
 
   const handleBack = async () => {
-    // Save progress before leaving
     if (streamType === 'movie') {
       await saveProgress();
     }
     router.back();
   };
 
-  const skipForward = async () => {
-    if (videoRef.current && currentTime + 10000 < duration) {
-      await videoRef.current.setPositionAsync(currentTime + 10000);
-    }
-  };
-
-  const skipBackward = async () => {
-    if (videoRef.current && currentTime - 10000 > 0) {
-      await videoRef.current.setPositionAsync(currentTime - 10000);
-    }
-  };
-
-  const formatTime = (millis: number) => {
-    const totalSeconds = Math.floor(millis / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+  // HTML player with HLS.js for better compatibility
+  const generatePlayerHTML = () => {
+    const startTime = resumePosition ? parseFloat(resumePosition as string) : 0;
     
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    body {
+      background: #000;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+    #video-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div id="video-container">
+    <video id="video" controls autoplay playsinline webkit-playsinline></video>
+  </div>
+  
+  <script>
+    const video = document.getElementById('video');
+    const videoSrc = '${streamUrl}';
+    
+    // Initialize HLS.js if supported
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 90
+      });
+      
+      hls.loadSource(videoSrc);
+      hls.attachMedia(video);
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        console.log('HLS manifest parsed');
+        video.currentTime = ${startTime};
+        video.play().catch(e => console.log('Autoplay prevented:', e));
+      });
+      
+      hls.on(Hls.Events.ERROR, function(event, data) {
+        console.error('HLS error:', data);
+        if (data.fatal) {
+          switch(data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log('Network error, trying to recover...');
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('Media error, trying to recover...');
+              hls.recoverMediaError();
+              break;
+            default:
+              console.log('Fatal error, cannot recover');
+              hls.destroy();
+              break;
+          }
+        }
+      });
+    }
+    // Fallback for native HLS support (iOS)
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = videoSrc;
+      video.addEventListener('loadedmetadata', function() {
+        video.currentTime = ${startTime};
+        video.play().catch(e => console.log('Autoplay prevented:', e));
+      });
+    }
+    
+    // Send playback updates
+    video.addEventListener('timeupdate', function() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'timeupdate',
+          currentTime: video.currentTime,
+          duration: video.duration
+        }));
+      }
+    });
+    
+    // Handle errors
+    video.addEventListener('error', function(e) {
+      console.error('Video error:', e);
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'error',
+          error: 'Video playback error'
+        }));
+      }
+    });
+  </script>
+</body>
+</html>
+    `;
+  };
+
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      
+      if (data.type === 'timeupdate') {
+        setPlaybackTime(data.currentTime);
+      } else if (data.type === 'error') {
+        Alert.alert('❌ Erreur', 'Erreur de lecture vidéo');
+      }
+    } catch (error) {
+      console.error('Error parsing webview message:', error);
+    }
   };
 
   if (loading) {
@@ -232,27 +296,25 @@ export default function PlayerScreen() {
         activeOpacity={1}
         onPress={toggleControls}
       >
-        <Video
-          ref={videoRef}
-          source={{ uri: streamUrl }}
-          style={styles.video}
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={!paused}
-          isLooping={false}
-          onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-          useNativeControls={false}
+        <WebView
+          ref={webViewRef}
+          source={{ html: generatePlayerHTML() }}
+          style={styles.webView}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          onMessage={handleWebViewMessage}
+          renderLoading={() => (
+            <View style={styles.webViewLoading}>
+              <ActivityIndicator size="large" color="#E50914" />
+            </View>
+          )}
         />
-
-        {buffering && (
-          <View style={styles.bufferingOverlay}>
-            <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.bufferingText}>Mise en mémoire tampon...</Text>
-          </View>
-        )}
 
         {showControls && (
           <View style={styles.controlsOverlay}>
-            {/* Top bar with back button and title */}
             <View style={styles.topBar}>
               <TouchableOpacity
                 style={styles.backButton}
@@ -265,54 +327,13 @@ export default function PlayerScreen() {
               </Text>
             </View>
 
-            {/* Center controls */}
-            <View style={styles.centerControls}>
-              <TouchableOpacity
-                style={styles.controlButton}
-                onPress={skipBackward}
-              >
-                <Ionicons name="play-back" size={48} color="#fff" />
-                <Text style={styles.skipText}>-10s</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={togglePlayPause}
-              >
-                <Ionicons
-                  name={paused ? 'play' : 'pause'}
-                  size={72}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.controlButton}
-                onPress={skipForward}
-              >
-                <Ionicons name="play-forward" size={48} color="#fff" />
-                <Text style={styles.skipText}>+10s</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bottom bar with progress */}
-            {streamType === 'movie' && duration > 0 && (
-              <View style={styles.bottomBar}>
+            <View style={styles.infoContainer}>
+              {streamType === 'movie' && playbackTime > 0 && (
                 <Text style={styles.timeText}>
-                  {formatTime(currentTime)} / {formatTime(duration)}
+                  {Math.floor(playbackTime / 60)}:{String(Math.floor(playbackTime % 60)).padStart(2, '0')}
                 </Text>
-                <View style={styles.progressBarContainer}>
-                  <View style={styles.progressBarBackground}>
-                    <View 
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${(currentTime / duration) * 100}%` }
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         )}
       </TouchableOpacity>
@@ -356,24 +377,23 @@ const styles = StyleSheet.create({
   videoContainer: {
     flex: 1,
   },
-  video: {
-    width: '100%',
-    height: '100%',
+  webView: {
+    flex: 1,
+    backgroundColor: '#000',
   },
-  bufferingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  webViewLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  bufferingText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 16,
+    backgroundColor: '#000',
   },
   controlsOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'space-between',
     paddingVertical: 20,
   },
@@ -387,7 +407,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -398,53 +418,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  centerControls: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 40,
-  },
-  controlButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playButton: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(229,9,20,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  skipText: {
-    color: '#fff',
-    fontSize: 14,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  bottomBar: {
+  infoContainer: {
     padding: 16,
-    paddingBottom: 32,
+    alignItems: 'center',
   },
   timeText: {
     color: '#fff',
-    fontSize: 14,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  progressBarContainer: {
-    marginTop: 8,
-  },
-  progressBarBackground: {
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#E50914',
-    borderRadius: 2,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
