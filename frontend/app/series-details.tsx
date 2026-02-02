@@ -60,6 +60,7 @@ export default function SeriesDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<number>(1);
 
   useEffect(() => {
     loadSeriesInfo();
