@@ -81,6 +81,39 @@ class ParentalPinUpdate(BaseModel):
 class ParentalPinVerify(BaseModel):
     pin: str
 
+class WatchlistItem(BaseModel):
+    user_code: str
+    profile_name: str
+    stream_id: str
+    stream_type: str  # 'movie' or 'series'
+    movie_data: Dict[str, Any]
+    added_at: datetime = Field(default_factory=datetime.utcnow)
+
+class WatchlistAdd(BaseModel):
+    user_code: str
+    profile_name: str
+    stream_id: str
+    stream_type: str
+    movie_data: Dict[str, Any]
+
+class WatchProgress(BaseModel):
+    user_code: str
+    profile_name: str
+    stream_id: str
+    stream_type: str
+    current_time: float
+    duration: float
+    percentage: float
+    last_watched: datetime = Field(default_factory=datetime.utcnow)
+
+class WatchProgressUpdate(BaseModel):
+    user_code: str
+    profile_name: str
+    stream_id: str
+    stream_type: str
+    current_time: float
+    duration: float
+
 # ==================== HELPER FUNCTIONS ====================
 
 def generate_user_code(length: int = 8) -> str:
