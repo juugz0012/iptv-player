@@ -364,6 +364,25 @@ export default function SeriesScreen() {
           }
         />
       )}
+        </>
+      ) : (
+        <FlatList
+          data={watchlist}
+          keyExtractor={(item) => item.stream_id}
+          renderItem={renderWatchlistSeries}
+          numColumns={2}
+          contentContainerStyle={styles.seriesList}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="bookmark-outline" size={64} color="#666" />
+              <Text style={styles.emptyText}>Aucune série dans votre liste</Text>
+              <Text style={styles.emptySubtext}>
+                Ajoutez des séries à votre liste depuis la page de détails
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
