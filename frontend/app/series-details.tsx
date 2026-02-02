@@ -261,13 +261,104 @@ export default function SeriesDetailsScreen() {
             )}
           </View>
 
-          {/* Message pour les saisons */}
-          <View style={styles.episodesSection}>
-            <Text style={styles.episodesTitle}>Saisons et Épisodes</Text>
-            <Text style={styles.episodesText}>
-              La sélection et lecture des épisodes sera disponible prochainement
-            </Text>
-          </View>
+          {/* Saisons et Épisodes */}
+          {seriesInfo.seasons && seriesInfo.seasons.length > 0 && (
+            <View style={styles.episodesSection}>
+              <Text style={styles.episodesTitle}>Saisons et Épisodes</Text>
+              
+              {/* Sélecteur de saisons */}
+              <View style={styles.seasonsContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {seriesInfo.seasons.map((season) => (
+                    <TouchableOpacity
+                      key={season.season_number}
+                      style={[
+                        styles.seasonChip,
+                        selectedSeason === season.season_number && styles.seasonChipActive
+                      ]}
+                      onPress={() => setSelectedSeason(season.season_number)}
+                    >
+                      <Text style={[
+                        styles.seasonChipText,
+                        selectedSeason === season.season_number && styles.seasonChipTextActive
+                      ]}>
+                        Saison {season.season_number}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Liste des épisodes */}
+              {seriesInfo.episodes && seriesInfo.episodes[selectedSeason.toString()] && (
+                <View style={styles.episodesListContainer}>
+                  {seriesInfo.episodes[selectedSeason.toString()].map((episode, index) => (
+                    <TouchableOpacity
+                      key={episode.id}
+                      style={styles.episodeCard}
+                      onPress={() => {
+                        router.push({
+                          pathname: '/player',
+                          params: {
+                            streamId: episode.id,
+                            streamType: 'series',
+                            title: `${info.name} - S${selectedSeason}E${episode.episode_num} - ${episode.title}`,
+                            resumePosition: '0',
+                          },
+                        });
+                      }}
+                    >
+                      <View style={styles.episodeThumbnail}>
+                        <Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.episodeNumber}>
+                          {episode.episode_num}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.episodeInfo}>
+                        <View style={styles.episodeHeader}>
+                          <Text style={styles.episodeTitle} numberOfLines={1}>
+                            {episode.episode_num}. {episode.title || `Épisode ${episode.episode_num}`}
+                          </Text>
+                          {episode.info?.duration && (
+                            <Text style={styles.episodeDuration}>{episode.info.duration}</Text>
+                          )}
+                        </View>
+                        {episode.info?.plot && (
+                          <Text style={styles.episodePlot} numberOfLines={2}>
+                            {episode.info.plot}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Message si pas d'épisodes pour cette saison */}
+              {(!seriesInfo.episodes || !seriesInfo.episodes[selectedSeason.toString()]) && (
+                <View style={styles.noEpisodesContainer}>
+                  <Ionicons name="information-circle-outline" size={48} color="#666" />
+                  <Text style={styles.noEpisodesText}>
+                    Aucun épisode disponible pour cette saison
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Message si pas de saisons */}
+          {(!seriesInfo.seasons || seriesInfo.seasons.length === 0) && (
+            <View style={styles.episodesSection}>
+              <Text style={styles.episodesTitle}>Saisons et Épisodes</Text>
+              <View style={styles.noEpisodesContainer}>
+                <Ionicons name="information-circle-outline" size={48} color="#666" />
+                <Text style={styles.noEpisodesText}>
+                  Informations non disponibles pour cette série
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
