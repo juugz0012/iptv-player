@@ -67,6 +67,7 @@ export default function SeriesScreen() {
 
   useEffect(() => {
     loadCategories();
+    loadWatchlist();
   }, []);
 
   // Recharger uniquement si le cache est expiré
@@ -84,8 +85,25 @@ export default function SeriesScreen() {
       } else {
         console.log('✅ Utilisation du cache séries (âge: ' + Math.round(cacheAge / 1000) + 's)');
       }
+      
+      // Recharger la watchlist à chaque visite
+      loadWatchlist();
     }, [])
   );
+
+  const loadWatchlist = async () => {
+    if (!userCode || !currentProfile) return;
+    
+    try {
+      const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
+      // Filtrer uniquement les séries (stream_type === 'series')
+      const seriesWatchlist = (response.data || []).filter((item: any) => item.stream_type === 'series');
+      console.log('📥 Watchlist séries chargée:', seriesWatchlist.length, 'séries');
+      setWatchlist(seriesWatchlist);
+    } catch (error) {
+      console.error('Error loading series watchlist:', error);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery) {
