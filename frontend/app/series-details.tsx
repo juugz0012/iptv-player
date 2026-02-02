@@ -62,16 +62,39 @@ export default function SeriesDetailsScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
 
+  // Cache pour éviter de recharger à chaque visite
+  const cacheRef = useRef<{[key: string]: {data: SeriesInfo, timestamp: number}}>({});
+  const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
   useEffect(() => {
     loadSeriesInfo();
     checkWatchlistStatus();
-  }, []);
+  }, [seriesId]);
 
   const loadSeriesInfo = async () => {
     try {
       setLoading(true);
+      
+      // Vérifier le cache
+      const cached = cacheRef.current[seriesId as string];
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+        console.log('✅ Utilisation du cache série (âge: ' + Math.round((now - cached.timestamp) / 1000) + 's)');
+        setSeriesInfo(cached.data);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('📥 Chargement des infos série...');
       const response = await xtreamAPI.getSeriesInfo(seriesId as string);
       setSeriesInfo(response.data);
+      
+      // Mettre en cache
+      cacheRef.current[seriesId as string] = {
+        data: response.data,
+        timestamp: now
+      };
     } catch (error) {
       console.error('Error loading series info:', error);
       Alert.alert('❌ Erreur', 'Impossible de charger les informations de la série');
