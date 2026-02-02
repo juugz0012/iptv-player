@@ -509,6 +509,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+  rotateButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
   title: {
     flex: 1,
     fontSize: 20,
