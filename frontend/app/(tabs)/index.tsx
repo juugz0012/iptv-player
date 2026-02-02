@@ -406,4 +406,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  watchlistSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  watchlistContent: {
+    paddingHorizontal: 16,
+  },
+  watchlistItem: {
+    width: POSTER_WIDTH,
+    marginRight: 12,
+  },
+  watchlistPoster: {
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    borderRadius: 8,
+    backgroundColor: '#333',
+  },
+  watchlistPosterPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  watchlistTitle: {
+    fontSize: 13,
+    color: '#fff',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  watchlistRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  watchlistRatingText: {
+    fontSize: 11,
+    color: '#FFD700',
+    fontWeight: '600',
+  },
 });
