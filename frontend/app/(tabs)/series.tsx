@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { xtreamAPI } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -33,11 +34,22 @@ interface SeriesStream {
   category_id: string;
 }
 
+interface WatchlistItem {
+  stream_id: string;
+  movie_data: {
+    name: string;
+    cover?: string;
+    rating?: string;
+  };
+}
+
 export default function SeriesScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [series, setSeries] = useState<SeriesStream[]>([]);
   const [filteredSeries, setFilteredSeries] = useState<SeriesStream[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'all' | 'watchlist'>('all');
   const [loading, setLoading] = useState(true);
   const [loadingSeries, setLoadingSeries] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,6 +63,7 @@ export default function SeriesScreen() {
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   
   const router = useRouter();
+  const { currentProfile, userCode } = useAuth();
 
   useEffect(() => {
     loadCategories();
