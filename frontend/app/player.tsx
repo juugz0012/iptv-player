@@ -421,10 +421,21 @@ export default function PlayerScreen() {
       if (data.type === 'timeupdate') {
         setPlaybackTime(data.currentTime);
       } else if (data.type === 'error') {
-        console.error('WebView error:', data.error);
-        Alert.alert('❌ Erreur', 'Erreur de lecture vidéo');
+        console.error('WebView error:', data.error, 'Code:', data.code);
+        Alert.alert('❌ Erreur de lecture', `${data.error}\n\nCode: ${data.code || 'Unknown'}`);
+      } else if (data.type === 'hls_error') {
+        console.error('HLS error:', data.errorType, data.details);
+        if (data.errorType === 'networkError') {
+          Alert.alert('❌ Erreur réseau', 'Impossible de charger le flux. Vérifiez votre connexion.');
+        } else if (data.errorType === 'mediaError') {
+          Alert.alert('❌ Erreur média', 'Le format vidéo n\'est pas supporté.');
+        }
       } else if (data.type === 'loaded') {
         console.log('✅ Video loaded, duration:', data.duration);
+      } else if (data.type === 'playing') {
+        console.log('▶️ Video is playing');
+      } else if (data.type === 'info') {
+        console.log('ℹ️', data.message);
       }
     } catch (error) {
       console.error('Error parsing webview message:', error);
