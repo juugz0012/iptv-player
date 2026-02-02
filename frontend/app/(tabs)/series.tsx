@@ -173,6 +173,47 @@ export default function SeriesScreen() {
     });
   };
 
+  const renderWatchlistSeries = ({ item }: { item: WatchlistItem }) => (
+    <TouchableOpacity
+      style={styles.seriesCard}
+      onPress={() => router.push({
+        pathname: '/series-details',
+        params: {
+          seriesId: item.stream_id,
+        },
+      })}
+    >
+      {item.movie_data.cover ? (
+        <Image
+          source={{ uri: item.movie_data.cover }}
+          style={styles.seriesPoster}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.seriesPoster, styles.seriesPosterPlaceholder]}>
+          <Ionicons name="tv" size={48} color="#666" />
+        </View>
+      )}
+      <View style={styles.seriesInfo}>
+        <Text style={styles.seriesTitle} numberOfLines={2}>
+          {item.movie_data.name}
+        </Text>
+        {item.movie_data.rating && typeof item.movie_data.rating !== 'object' && (
+          <View style={styles.ratingContainer}>
+            <Ionicons name="star" size={14} color="#FFD700" />
+            <Text style={styles.ratingText}>{String(item.movie_data.rating)}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.playOverlay}>
+        <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
+      </View>
+      <View style={styles.watchlistBadge}>
+        <Ionicons name="bookmark" size={16} color="#E50914" />
+      </View>
+    </TouchableOpacity>
+  );
+
   const renderSeries = ({ item }: { item: SeriesStream }) => (
     <TouchableOpacity
       style={styles.seriesCard}
