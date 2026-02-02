@@ -42,11 +42,37 @@ export default function SeriesScreen() {
   const [loadingSeries, setLoadingSeries] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Cache pour éviter de recharger à chaque visite
+  const cacheRef = useRef({
+    categories: [] as Category[],
+    series: [] as SeriesStream[],
+    lastLoadTime: 0,
+  });
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
   const router = useRouter();
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Recharger uniquement si le cache est expiré
+  useFocusEffect(
+    React.useCallback(() => {
+      const now = Date.now();
+      const cacheAge = now - cacheRef.current.lastLoadTime;
+      
+      if (cacheAge > CACHE_DURATION && cacheRef.current.categories.length > 0) {
+        console.log('🔄 Cache expiré, rechargement des séries...');
+        loadCategories();
+      } else if (cacheRef.current.categories.length === 0) {
+        console.log('📥 Premier chargement des séries...');
+        loadCategories();
+      } else {
+        console.log('✅ Utilisation du cache séries (âge: ' + Math.round(cacheAge / 1000) + 's)');
+      }
+    }, [])
+  );
 
   useEffect(() => {
     if (searchQuery) {
