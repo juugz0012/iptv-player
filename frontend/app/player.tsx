@@ -375,6 +375,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'space-between',
+    paddingVertical: 20,
   },
   topBar: {
     flexDirection: 'row',
@@ -398,6 +399,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   centerControls: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
