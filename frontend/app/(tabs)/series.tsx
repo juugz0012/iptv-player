@@ -536,4 +536,21 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
   },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  watchlistBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
