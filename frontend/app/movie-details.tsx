@@ -236,7 +236,7 @@ export default function MovieDetailsScreen() {
               {info.rating && (
                 <View style={styles.ratingBadge}>
                   <Ionicons name="star" size={16} color="#FFD700" />
-                  <Text style={styles.ratingText}>{parseFloat(info.rating).toFixed(1)}</Text>
+                  <Text style={styles.ratingText}>{String(parseFloat(info.rating).toFixed(1))}</Text>
                 </View>
               )}
               {releaseYear && (
