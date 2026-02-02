@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { xtreamAPI } from '../../utils/api';
+import { xtreamAPI, watchlistAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
