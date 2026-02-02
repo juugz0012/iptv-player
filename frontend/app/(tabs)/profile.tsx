@@ -140,15 +140,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.info}>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={() => router.push('/test-api')}
-          >
-            <Ionicons name="flask" size={20} color="#E50914" />
-            <Text style={styles.testButtonText}>Test API Xtream</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.infoText}>IPTV Player v1.0.0</Text>
+          <Text style={styles.infoText}>IPTV Player v2.0.0</Text>
           <Text style={styles.infoText}>Compatible mobile et Android TV</Text>
         </View>
       </ScrollView>
