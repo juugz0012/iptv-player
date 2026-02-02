@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
   const [progress, setProgress] = useState(0);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [seriesWatchlist, setSeriesWatchlist] = useState<WatchlistItem[]>([]);
   const [loadingWatchlist, setLoadingWatchlist] = useState(true);
 
   useEffect(() => {
