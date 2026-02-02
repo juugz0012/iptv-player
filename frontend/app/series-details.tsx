@@ -301,12 +301,26 @@ export default function SeriesDetailsScreen() {
                       ]}
                       onPress={() => setSelectedSeason(season.season_number)}
                     >
-                      <Text style={[
-                        styles.seasonChipText,
-                        selectedSeason === season.season_number && styles.seasonChipTextActive
-                      ]}>
-                        Saison {season.season_number}
-                      </Text>
+                      <LinearGradient
+                        colors={selectedSeason === season.season_number 
+                          ? ['#E50914', '#B20710'] 
+                          : ['#2a2a2a', '#1f1f1f']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.seasonChipGradient}
+                      >
+                        <Text style={[
+                          styles.seasonChipText,
+                          selectedSeason === season.season_number && styles.seasonChipTextActive
+                        ]}>
+                          Saison {season.season_number}
+                        </Text>
+                        {season.episode_count && (
+                          <Text style={styles.seasonEpisodeCount}>
+                            {season.episode_count} épisode{season.episode_count > 1 ? 's' : ''}
+                          </Text>
+                        )}
+                      </LinearGradient>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
