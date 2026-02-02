@@ -15,7 +15,6 @@ import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { xtreamAPI, progressAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
-import * as ScreenOrientation from 'expo-screen-orientation';
 
 const { width, height } = Dimensions.get('window');
 
