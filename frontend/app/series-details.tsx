@@ -329,7 +329,10 @@ export default function SeriesDetailsScreen() {
               {/* Liste des épisodes */}
               {seriesInfo.episodes && seriesInfo.episodes[selectedSeason.toString()] && (
                 <View style={styles.episodesListContainer}>
-                  {seriesInfo.episodes[selectedSeason.toString()].map((episode, index) => (
+                  {seriesInfo.episodes[selectedSeason.toString()].map((episode, index) => {
+                    const episodeImage = episode.info?.movie_image || seriesInfo.info.cover;
+                    
+                    return (
                     <TouchableOpacity
                       key={episode.id}
                       style={styles.episodeCard}
@@ -345,11 +348,35 @@ export default function SeriesDetailsScreen() {
                         });
                       }}
                     >
+                      {/* Preview image ou placeholder */}
                       <View style={styles.episodeThumbnail}>
-                        <Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.8)" />
-                        <Text style={styles.episodeNumber}>
-                          {episode.episode_num}
-                        </Text>
+                        {episodeImage ? (
+                          <Image 
+                            source={{ uri: episodeImage }}
+                            style={styles.episodeThumbnailImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <LinearGradient
+                            colors={['#2a2a2a', '#1a1a1a']}
+                            style={styles.episodeThumbnailGradient}
+                          >
+                            <Ionicons name="tv" size={32} color="#666" />
+                          </LinearGradient>
+                        )}
+                        
+                        {/* Overlay Play */}
+                        <LinearGradient
+                          colors={['transparent', 'rgba(0,0,0,0.8)']}
+                          style={styles.episodeThumbnailOverlay}
+                        >
+                          <Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.9)" />
+                          <View style={styles.episodeNumberBadge}>
+                            <Text style={styles.episodeNumber}>
+                              {episode.episode_num}
+                            </Text>
+                          </View>
+                        </LinearGradient>
                       </View>
                       
                       <View style={styles.episodeInfo}>
@@ -358,7 +385,10 @@ export default function SeriesDetailsScreen() {
                             {episode.episode_num}. {episode.title || `Épisode ${episode.episode_num}`}
                           </Text>
                           {episode.info?.duration && (
-                            <Text style={styles.episodeDuration}>{episode.info.duration}</Text>
+                            <View style={styles.durationBadge}>
+                              <Ionicons name="time-outline" size={12} color="#888" />
+                              <Text style={styles.episodeDuration}>{episode.info.duration}</Text>
+                            </View>
                           )}
                         </View>
                         {episode.info?.plot && (
@@ -368,7 +398,7 @@ export default function SeriesDetailsScreen() {
                         )}
                       </View>
                     </TouchableOpacity>
-                  ))}
+                  )})}
                 </View>
               )}
 
