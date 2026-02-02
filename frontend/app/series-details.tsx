@@ -14,8 +14,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { xtreamAPI, watchlistAPI } from './utils/api';
-import { useAuth } from './contexts/AuthContext';
+import { xtreamAPI, watchlistAPI } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
