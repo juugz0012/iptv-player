@@ -45,13 +45,13 @@ export default function HomeScreen() {
     loadWatchlist();
   }, []);
 
-  // Recharger la watchlist quand la page est focalisée
-  useEffect(() => {
-    const unsubscribe = router.subscribe?.(() => {
+  // Recharger la watchlist quand l'utilisateur revient sur cet onglet
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Page Accueil focalisée - Rechargement watchlist');
       loadWatchlist();
-    });
-    return unsubscribe;
-  }, []);
+    }, [userCode, currentProfile])
+  );
 
   const loadWatchlist = async () => {
     if (!userCode || !currentProfile) {
