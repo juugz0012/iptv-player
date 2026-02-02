@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { xtreamAPI, progressAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -25,6 +26,7 @@ export default function PlayerScreen() {
   const [loading, setLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [playbackTime, setPlaybackTime] = useState(0);
+  const [isLandscape, setIsLandscape] = useState(false);
   
   const webViewRef = useRef<WebView>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
