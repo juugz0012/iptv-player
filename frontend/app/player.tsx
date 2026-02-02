@@ -198,6 +198,7 @@ export default function PlayerScreen() {
   const generatePlayerHTML = () => {
     const startTime = resumePosition ? parseFloat(resumePosition as string) : 0;
     const isHLS = streamExtension === 'm3u8' || streamExtension === 'ts';
+    const isLive = streamType === 'live';
     
     return `
 <!DOCTYPE html>
@@ -234,7 +235,7 @@ export default function PlayerScreen() {
 </head>
 <body>
   <div id="video-container">
-    <video id="video" controls autoplay playsinline webkit-playsinline></video>
+    <video id="video" controls autoplay playsinline webkit-playsinline ${isLive ? 'muted' : ''}></video>
   </div>
   
   <script>
@@ -242,29 +243,72 @@ export default function PlayerScreen() {
     const videoSrc = '${streamUrl}';
     const extension = '${streamExtension}';
     const isHLS = ${isHLS};
+    const isLive = ${isLive};
     
-    console.log('🎬 Player init:', { videoSrc, extension, isHLS });
+    console.log('🎬 Player init:', { videoSrc, extension, isHLS, isLive });
     
     // Pour HLS (m3u8, ts)
     if (isHLS && typeof Hls !== 'undefined' && Hls.isSupported()) {
       console.log('✅ Using HLS.js');
-      const hls = new Hls({
+      
+      const hlsConfig = {
+        debug: true,
         enableWorker: true,
-        lowLatencyMode: false,
-        backBufferLength: 90
-      });
+        lowLatencyMode: isLive,
+        backBufferLength: isLive ? 30 : 90,
+        maxBufferLength: isLive ? 10 : 30,
+        maxMaxBufferLength: isLive ? 20 : 600,
+        liveSyncDurationCount: isLive ? 3 : 2,
+        liveMaxLatencyDurationCount: isLive ? 10 : Infinity,
+        liveDurationInfinity: isLive,
+        highBufferWatchdogPeriod: 2,
+        xhrSetup: function(xhr, url) {
+          xhr.withCredentials = false;
+          xhr.setRequestHeader('User-Agent', 'Mozilla/5.0');
+        }
+      };
+      
+      const hls = new Hls(hlsConfig);
       
       hls.loadSource(videoSrc);
       hls.attachMedia(video);
       
       hls.on(Hls.Events.MANIFEST_PARSED, function() {
         console.log('✅ HLS manifest parsed');
-        video.currentTime = ${startTime};
-        video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
+        if (!isLive && ${startTime} > 0) {
+          video.currentTime = ${startTime};
+        }
+        
+        video.play().then(() => {
+          console.log('✅ Video playing');
+          if (isLive && video.muted) {
+            // Unmute after autoplay
+            setTimeout(() => {
+              video.muted = false;
+            }, 500);
+          }
+        }).catch(e => {
+          console.log('⚠️ Autoplay prevented:', e);
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'info',
+              message: 'Tap to play'
+            }));
+          }
+        });
       });
       
       hls.on(Hls.Events.ERROR, function(event, data) {
-        console.error('❌ HLS error:', data);
+        console.error('❌ HLS error:', data.type, data.details);
+        
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'hls_error',
+            errorType: data.type,
+            details: data.details
+          }));
+        }
+        
         if (data.fatal) {
           switch(data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -278,17 +322,30 @@ export default function PlayerScreen() {
             default:
               console.log('💥 Fatal error, cannot recover');
               hls.destroy();
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'error',
+                  error: 'Fatal HLS error: ' + data.details
+                }));
+              }
               break;
           }
         }
       });
+      
+      hls.on(Hls.Events.FRAG_LOADED, function() {
+        console.log('📦 Fragment loaded');
+      });
+      
     }
     // Support HLS natif (iOS)
     else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
       console.log('✅ Using native HLS support');
       video.src = videoSrc;
       video.addEventListener('loadedmetadata', function() {
-        video.currentTime = ${startTime};
+        if (!isLive && ${startTime} > 0) {
+          video.currentTime = ${startTime};
+        }
         video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
       });
     }
@@ -325,13 +382,29 @@ export default function PlayerScreen() {
       }
     });
     
+    // Playing event
+    video.addEventListener('playing', function() {
+      console.log('▶️ Video is playing');
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'playing'
+        }));
+      }
+    });
+    
+    // Waiting event
+    video.addEventListener('waiting', function() {
+      console.log('⏳ Video is buffering');
+    });
+    
     // Handle errors
     video.addEventListener('error', function(e) {
       console.error('❌ Video error:', e, video.error);
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'error',
-          error: video.error ? video.error.message : 'Unknown error'
+          error: video.error ? video.error.message : 'Unknown error',
+          code: video.error ? video.error.code : 0
         }));
       }
     });
