@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  Image,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { xtreamAPI } from '../../utils/api';
+import { xtreamAPI, watchlistAPI } from '../../utils/api';
 import axios from 'axios';
 
 const { width } = Dimensions.get('window');
