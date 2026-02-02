@@ -546,17 +546,100 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f1f1f',
     borderRadius: 12,
     padding: 20,
-    alignItems: 'center',
+    marginBottom: 24,
   },
   episodesTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 16,
+  },
+  seasonsContainer: {
+    marginBottom: 20,
+  },
+  seasonChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#333',
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  seasonChipActive: {
+    backgroundColor: '#E50914',
+  },
+  seasonChipText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  seasonChipTextActive: {
+    color: '#fff',
+  },
+  episodesListContainer: {
+    gap: 12,
+  },
+  episodeCard: {
+    flexDirection: 'row',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    overflow: 'hidden',
     marginBottom: 12,
   },
-  episodesText: {
+  episodeThumbnail: {
+    width: 120,
+    height: 70,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  episodeNumber: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  episodeInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  episodeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  episodeTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  episodeDuration: {
+    fontSize: 12,
+    color: '#888',
+    marginLeft: 8,
+  },
+  episodePlot: {
+    fontSize: 12,
+    color: '#aaa',
+    lineHeight: 18,
+  },
+  noEpisodesContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  noEpisodesText: {
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
+    marginTop: 12,
   },
 });
