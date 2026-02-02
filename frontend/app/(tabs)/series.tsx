@@ -407,6 +407,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#222',
+    borderRadius: 8,
+    gap: 8,
+  },
+  tabActive: {
+    backgroundColor: '#2a0a0e',
+    borderWidth: 2,
+    borderColor: '#E50914',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#888',
+  },
+  tabTextActive: {
+    color: '#E50914',
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
