@@ -192,7 +192,7 @@ export default function MoviesScreen() {
         {item.movie_data.rating && (
           <View style={styles.ratingContainer}>
             <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingText}>{item.movie_data.rating}</Text>
+            <Text style={styles.ratingText}>{String(item.movie_data.rating)}</Text>
           </View>
         )}
       </View>
