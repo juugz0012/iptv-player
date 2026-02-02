@@ -179,6 +179,59 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Section "Ma liste" - Style Netflix */}
+        {!loadingWatchlist && watchlist.length > 0 && (
+          <View style={styles.watchlistSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="bookmark" size={24} color="#E50914" />
+              <Text style={styles.sectionTitle}>Ma liste</Text>
+            </View>
+            
+            <FlatList
+              horizontal
+              data={watchlist}
+              keyExtractor={(item) => item.stream_id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.watchlistItem}
+                  onPress={() => router.push({
+                    pathname: '/movie-details',
+                    params: {
+                      streamId: item.stream_id,
+                      streamType: item.stream_type,
+                    },
+                  })}
+                >
+                  {item.movie_data.stream_icon ? (
+                    <Image
+                      source={{ uri: item.movie_data.stream_icon }}
+                      style={styles.watchlistPoster}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.watchlistPoster, styles.watchlistPosterPlaceholder]}>
+                      <Ionicons name="film" size={32} color="#666" />
+                    </View>
+                  )}
+                  <Text style={styles.watchlistTitle} numberOfLines={2}>
+                    {item.movie_data.name}
+                  </Text>
+                  {item.movie_data.rating && (
+                    <View style={styles.watchlistRating}>
+                      <Ionicons name="star" size={12} color="#FFD700" />
+                      <Text style={styles.watchlistRatingText}>
+                        {parseFloat(item.movie_data.rating).toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.watchlistContent}
+            />
+          </View>
+        )}
+
         <View style={styles.categoriesContainer}>
           {categories.map((category, index) => (
             <TouchableOpacity
