@@ -22,7 +22,7 @@ Le panel administrateur a été **complètement refait** pour simplifier la cré
 ## 🚀 COMMENT UTILISER LE NOUVEAU PANEL
 
 ### **Étape 1 : Accéder au panel**
-Ouvrez : `https://iptv-player-48.preview.emergentagent.com/admin`
+Ouvrez : `https://streamy-154.preview.emergentagent.com/admin`
 
 ### **Étape 2 : Remplir le formulaire**
 
@@ -211,9 +211,9 @@ POST /api/admin/create-user-with-xtream?max_profiles=5
 
 ## 🔗 LIENS RAPIDES
 
-- **Panel Admin** : https://iptv-player-48.preview.emergentagent.com/admin
-- **App** : https://iptv-player-48.preview.emergentagent.com
-- **Test API** : https://iptv-player-48.preview.emergentagent.com/test-api
+- **Panel Admin** : https://streamy-154.preview.emergentagent.com/admin
+- **App** : https://streamy-154.preview.emergentagent.com
+- **Test API** : https://streamy-154.preview.emergentagent.com/test-api
 
 ---
 

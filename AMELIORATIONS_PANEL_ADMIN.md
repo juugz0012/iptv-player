@@ -197,7 +197,7 @@ Note : "Revendeur - Jean Dupont - Contact: 06 12 34 56 78"
 
 ## 🔗 TESTER MAINTENANT
 
-**URL du panel admin** : https://iptv-player-48.preview.emergentagent.com/admin
+**URL du panel admin** : https://streamy-154.preview.emergentagent.com/admin
 
 1. Entrez vos identifiants Xtream
 2. Cliquez sur l'icône œil pour voir le password
