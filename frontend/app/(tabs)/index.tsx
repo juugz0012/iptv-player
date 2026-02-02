@@ -46,16 +46,19 @@ export default function HomeScreen() {
 
   const loadWatchlist = async () => {
     if (!userCode || !currentProfile) {
+      console.log('❌ No userCode or currentProfile');
       setLoadingWatchlist(false);
       return;
     }
     
     try {
       setLoadingWatchlist(true);
+      console.log('📥 Loading watchlist for:', userCode, currentProfile.name);
       const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
+      console.log('✅ Watchlist loaded:', response.data?.length, 'items');
       setWatchlist(response.data || []);
     } catch (error) {
-      console.error('Error loading watchlist:', error);
+      console.error('❌ Error loading watchlist:', error);
     } finally {
       setLoadingWatchlist(false);
     }
