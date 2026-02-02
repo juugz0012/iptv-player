@@ -134,14 +134,12 @@ export default function SeriesScreen() {
   };
 
   const handleSeriesPress = (serie: SeriesStream) => {
-    // Navigate to series detail screen (can be implemented later)
-    Alert.alert(
-      serie.name,
-      'Détails de la série et liste des épisodes \u00e0 venir',
-      [
-        { text: 'OK' },
-      ]
-    );
+    router.push({
+      pathname: '/series-details',
+      params: {
+        seriesId: serie.series_id.toString(),
+      },
+    });
   };
 
   const renderSeries = ({ item }: { item: SeriesStream }) => (
