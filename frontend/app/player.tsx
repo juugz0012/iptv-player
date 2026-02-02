@@ -408,6 +408,18 @@ export default function PlayerScreen() {
               <Text style={styles.title} numberOfLines={1}>
                 {title}
               </Text>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  style={styles.rotateButton}
+                  onPress={toggleOrientation}
+                >
+                  <Ionicons 
+                    name={isLandscape ? "phone-portrait" : "phone-landscape"} 
+                    size={24} 
+                    color="#fff" 
+                  />
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.infoContainer}>
