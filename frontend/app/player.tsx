@@ -479,66 +479,116 @@ export default function PlayerScreen() {
     <View style={styles.container}>
       <StatusBar style="light" hidden />
       
-      <TouchableOpacity
-        style={styles.videoContainer}
-        activeOpacity={1}
-        onPress={toggleControls}
-      >
-        <WebView
-          ref={webViewRef}
-          source={{ html: generatePlayerHTML() }}
-          style={styles.webView}
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          onMessage={handleWebViewMessage}
-          renderLoading={() => (
-            <View style={styles.webViewLoading}>
-              <ActivityIndicator size="large" color="#E50914" />
-              <Text style={styles.loadingText}>Chargement de la vidéo...</Text>
+      {/* Utiliser expo-video pour Live TV, WebView pour films/séries */}
+      {streamType === 'live' ? (
+        // Lecteur natif expo-video pour Live TV
+        <TouchableOpacity
+          style={styles.videoContainer}
+          activeOpacity={1}
+          onPress={toggleControls}
+        >
+          <VideoView
+            style={styles.video}
+            player={player}
+            allowsFullscreen
+            allowsPictureInPicture
+          />
+          
+          {showControls && (
+            <View style={styles.controlsOverlay}>
+              <View style={styles.topBar}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={handleBack}
+                >
+                  <Ionicons name="arrow-back" size={28} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.title} numberOfLines={1}>
+                  {title}
+                </Text>
+                {Platform.OS !== 'web' && (
+                  <TouchableOpacity
+                    style={styles.rotateButton}
+                    onPress={toggleOrientation}
+                  >
+                    <Ionicons 
+                      name={isLandscape ? "phone-portrait" : "phone-landscape"} 
+                      size={24} 
+                      color="#fff" 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.infoContainer}>
+                <Text style={styles.formatBadge}>LIVE - {streamExtension.toUpperCase()}</Text>
+              </View>
             </View>
           )}
-        />
+        </TouchableOpacity>
+      ) : (
+        // Lecteur WebView pour Films/Séries (déjà fonctionnel)
+        <TouchableOpacity
+          style={styles.videoContainer}
+          activeOpacity={1}
+          onPress={toggleControls}
+        >
+          <WebView
+            ref={webViewRef}
+            source={{ html: generatePlayerHTML() }}
+            style={styles.webView}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            onMessage={handleWebViewMessage}
+            renderLoading={() => (
+              <View style={styles.webViewLoading}>
+                <ActivityIndicator size="large" color="#E50914" />
+                <Text style={styles.loadingText}>Chargement de la vidéo...</Text>
+              </View>
+            )}
+          />
 
-        {showControls && (
-          <View style={styles.controlsOverlay}>
-            <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBack}
-              >
-                <Ionicons name="arrow-back" size={28} color="#fff" />
-              </TouchableOpacity>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
-              {Platform.OS !== 'web' && (
+          {showControls && (
+            <View style={styles.controlsOverlay}>
+              <View style={styles.topBar}>
                 <TouchableOpacity
-                  style={styles.rotateButton}
-                  onPress={toggleOrientation}
+                  style={styles.backButton}
+                  onPress={handleBack}
                 >
-                  <Ionicons 
-                    name={isLandscape ? "phone-portrait" : "phone-landscape"} 
-                    size={24} 
-                    color="#fff" 
-                  />
+                  <Ionicons name="arrow-back" size={28} color="#fff" />
                 </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.infoContainer}>
-              <Text style={styles.formatBadge}>{streamExtension.toUpperCase()}</Text>
-              {streamType === 'movie' && playbackTime > 0 && (
-                <Text style={styles.timeText}>
-                  {Math.floor(playbackTime / 60)}:{String(Math.floor(playbackTime % 60)).padStart(2, '0')}
+                <Text style={styles.title} numberOfLines={1}>
+                  {title}
                 </Text>
-              )}
+                {Platform.OS !== 'web' && (
+                  <TouchableOpacity
+                    style={styles.rotateButton}
+                    onPress={toggleOrientation}
+                  >
+                    <Ionicons 
+                      name={isLandscape ? "phone-portrait" : "phone-landscape"} 
+                      size={24} 
+                      color="#fff" 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.infoContainer}>
+                <Text style={styles.formatBadge}>{streamExtension.toUpperCase()}</Text>
+                {streamType === 'movie' && playbackTime > 0 && (
+                  <Text style={styles.timeText}>
+                    {Math.floor(playbackTime / 60)}:{String(Math.floor(playbackTime % 60)).padStart(2, '0')}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-        )}
-      </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
