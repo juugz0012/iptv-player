@@ -154,7 +154,7 @@ export default function MoviesScreen() {
       )}
       <View style={styles.movieInfo}>
         <Text style={styles.movieTitle} numberOfLines={2}>
-          {item.name}
+          {typeof item.name === 'string' ? item.name : JSON.stringify(item.name)}
         </Text>
         {item.rating && typeof item.rating !== 'object' && (
           <View style={styles.ratingContainer}>
