@@ -357,3 +357,45 @@ export const xtreamAPI = {
     cachedCredentials = null;
   },
 };
+
+// ==================== WATCHLIST & PROGRESS API ====================
+
+export const watchlistAPI = {
+  addToWatchlist: (userCode: string, profileName: string, streamId: string, streamType: string, movieData: any) =>
+    api.post('/watchlist/add', {
+      user_code: userCode,
+      profile_name: profileName,
+      stream_id: streamId,
+      stream_type: streamType,
+      movie_data: movieData,
+    }),
+  
+  removeFromWatchlist: (userCode: string, profileName: string, streamId: string) =>
+    api.delete('/watchlist/remove', {
+      params: { user_code: userCode, profile_name: profileName, stream_id: streamId }
+    }),
+  
+  getWatchlist: (userCode: string, profileName: string) =>
+    api.get(`/watchlist/${userCode}/${profileName}`),
+  
+  checkWatchlist: (userCode: string, profileName: string, streamId: string) =>
+    api.get(`/watchlist/check/${userCode}/${profileName}/${streamId}`),
+};
+
+export const progressAPI = {
+  updateProgress: (userCode: string, profileName: string, streamId: string, streamType: string, currentTime: number, duration: number) =>
+    api.post('/progress/update', {
+      user_code: userCode,
+      profile_name: profileName,
+      stream_id: streamId,
+      stream_type: streamType,
+      current_time: currentTime,
+      duration: duration,
+    }),
+  
+  getProgress: (userCode: string, profileName: string, streamId: string) =>
+    api.get(`/progress/${userCode}/${profileName}/${streamId}`),
+  
+  getAllProgress: (userCode: string, profileName: string) =>
+    api.get(`/progress/${userCode}/${profileName}`),
+};
