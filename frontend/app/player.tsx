@@ -21,6 +21,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function PlayerScreen() {
   const [streamUrl, setStreamUrl] = useState('');
+  const [streamExtension, setStreamExtension] = useState('m3u8');
   const [loading, setLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [playbackTime, setPlaybackTime] = useState(0);
@@ -36,7 +37,6 @@ export default function PlayerScreen() {
   useEffect(() => {
     loadStream();
 
-    // Handle Android back button
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       handleBack();
       return true;
@@ -80,13 +80,36 @@ export default function PlayerScreen() {
     try {
       setLoading(true);
       
+      // Pour les films, récupérer d'abord les infos pour connaître l'extension
+      let extension = 'm3u8';
+      
+      if (streamType === 'movie') {
+        try {
+          const movieInfo = await xtreamAPI.getVodInfo(streamId as string);
+          const containerExt = movieInfo.data?.movie_data?.container_extension;
+          
+          if (containerExt) {
+            extension = containerExt;
+            console.log('📦 Container extension détecté:', extension);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération des infos:', error);
+          // Utiliser mp4 par défaut pour les films
+          extension = 'mp4';
+        }
+      }
+      
+      setStreamExtension(extension);
+      
       const response = await xtreamAPI.getStreamUrl(
         streamType as string,
-        streamId as string
+        streamId as string,
+        extension
       );
       
       const url = response.data.url;
-      console.log('Stream URL:', url);
+      console.log('🎬 Stream URL:', url);
+      console.log('📹 Extension:', extension);
       setStreamUrl(url);
       
       if (resumePosition && parseFloat(resumePosition as string) > 0) {
@@ -115,7 +138,7 @@ export default function PlayerScreen() {
         streamId as string,
         streamType as string,
         Math.floor(timeToSave),
-        7200 // Durée estimée de 2h par défaut
+        7200
       );
     } catch (error) {
       console.error('Error saving progress:', error);
@@ -133,16 +156,17 @@ export default function PlayerScreen() {
     router.back();
   };
 
-  // HTML player with HLS.js for better compatibility
+  // HTML player universel - supporte HLS, MP4, MKV
   const generatePlayerHTML = () => {
     const startTime = resumePosition ? parseFloat(resumePosition as string) : 0;
+    const isHLS = streamExtension === 'm3u8' || streamExtension === 'ts';
     
     return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  ${isHLS ? '<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>' : ''}
   <style>
     * {
       margin: 0;
@@ -178,9 +202,14 @@ export default function PlayerScreen() {
   <script>
     const video = document.getElementById('video');
     const videoSrc = '${streamUrl}';
+    const extension = '${streamExtension}';
+    const isHLS = ${isHLS};
     
-    // Initialize HLS.js if supported
-    if (Hls.isSupported()) {
+    console.log('🎬 Player init:', { videoSrc, extension, isHLS });
+    
+    // Pour HLS (m3u8, ts)
+    if (isHLS && typeof Hls !== 'undefined' && Hls.isSupported()) {
+      console.log('✅ Using HLS.js');
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -191,37 +220,48 @@ export default function PlayerScreen() {
       hls.attachMedia(video);
       
       hls.on(Hls.Events.MANIFEST_PARSED, function() {
-        console.log('HLS manifest parsed');
+        console.log('✅ HLS manifest parsed');
         video.currentTime = ${startTime};
-        video.play().catch(e => console.log('Autoplay prevented:', e));
+        video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
       });
       
       hls.on(Hls.Events.ERROR, function(event, data) {
-        console.error('HLS error:', data);
+        console.error('❌ HLS error:', data);
         if (data.fatal) {
           switch(data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('Network error, trying to recover...');
+              console.log('🔄 Network error, trying to recover...');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('Media error, trying to recover...');
+              console.log('🔄 Media error, trying to recover...');
               hls.recoverMediaError();
               break;
             default:
-              console.log('Fatal error, cannot recover');
+              console.log('💥 Fatal error, cannot recover');
               hls.destroy();
               break;
           }
         }
       });
     }
-    // Fallback for native HLS support (iOS)
-    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Support HLS natif (iOS)
+    else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
+      console.log('✅ Using native HLS support');
       video.src = videoSrc;
       video.addEventListener('loadedmetadata', function() {
         video.currentTime = ${startTime};
-        video.play().catch(e => console.log('Autoplay prevented:', e));
+        video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
+      });
+    }
+    // Pour MP4, MKV, etc. (lecture directe)
+    else {
+      console.log('✅ Using direct video playback (MP4/MKV)');
+      video.src = videoSrc;
+      video.addEventListener('loadedmetadata', function() {
+        console.log('✅ Video metadata loaded, duration:', video.duration);
+        video.currentTime = ${startTime};
+        video.play().catch(e => console.log('⚠️ Autoplay prevented:', e));
       });
     }
     
@@ -231,18 +271,29 @@ export default function PlayerScreen() {
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'timeupdate',
           currentTime: video.currentTime,
-          duration: video.duration
+          duration: video.duration || 0
+        }));
+      }
+    });
+    
+    // Video loaded
+    video.addEventListener('loadeddata', function() {
+      console.log('✅ Video loaded successfully');
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'loaded',
+          duration: video.duration || 0
         }));
       }
     });
     
     // Handle errors
     video.addEventListener('error', function(e) {
-      console.error('Video error:', e);
+      console.error('❌ Video error:', e, video.error);
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'error',
-          error: 'Video playback error'
+          error: video.error ? video.error.message : 'Unknown error'
         }));
       }
     });
@@ -259,7 +310,10 @@ export default function PlayerScreen() {
       if (data.type === 'timeupdate') {
         setPlaybackTime(data.currentTime);
       } else if (data.type === 'error') {
+        console.error('WebView error:', data.error);
         Alert.alert('❌ Erreur', 'Erreur de lecture vidéo');
+      } else if (data.type === 'loaded') {
+        console.log('✅ Video loaded, duration:', data.duration);
       }
     } catch (error) {
       console.error('Error parsing webview message:', error);
@@ -309,6 +363,7 @@ export default function PlayerScreen() {
           renderLoading={() => (
             <View style={styles.webViewLoading}>
               <ActivityIndicator size="large" color="#E50914" />
+              <Text style={styles.loadingText}>Chargement de la vidéo...</Text>
             </View>
           )}
         />
@@ -328,6 +383,7 @@ export default function PlayerScreen() {
             </View>
 
             <View style={styles.infoContainer}>
+              <Text style={styles.formatBadge}>{streamExtension.toUpperCase()}</Text>
               {streamType === 'movie' && playbackTime > 0 && (
                 <Text style={styles.timeText}>
                   {Math.floor(playbackTime / 60)}:{String(Math.floor(playbackTime % 60)).padStart(2, '0')}
@@ -396,6 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'space-between',
     paddingVertical: 20,
+    pointerEvents: 'box-none',
   },
   topBar: {
     flexDirection: 'row',
@@ -421,6 +478,16 @@ const styles = StyleSheet.create({
   infoContainer: {
     padding: 16,
     alignItems: 'center',
+    gap: 8,
+  },
+  formatBadge: {
+    backgroundColor: '#E50914',
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   timeText: {
     color: '#fff',
