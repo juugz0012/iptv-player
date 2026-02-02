@@ -65,8 +65,15 @@ export default function HomeScreen() {
       setLoadingWatchlist(true);
       console.log('📥 Loading watchlist for:', userCode, currentProfile.name);
       const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
-      console.log('✅ Watchlist loaded:', response.data?.length, 'items');
-      setWatchlist(response.data || []);
+      const allItems = response.data || [];
+      
+      // Séparer films et séries
+      const movies = allItems.filter((item: any) => item.stream_type !== 'series');
+      const series = allItems.filter((item: any) => item.stream_type === 'series');
+      
+      console.log('✅ Watchlist loaded:', movies.length, 'films,', series.length, 'séries');
+      setWatchlist(movies);
+      setSeriesWatchlist(series);
     } catch (error) {
       console.error('❌ Error loading watchlist:', error);
     } finally {
