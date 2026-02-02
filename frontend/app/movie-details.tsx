@@ -13,8 +13,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { xtreamAPI } from '../utils/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { xtreamAPI, watchlistAPI, progressAPI } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,11 +27,14 @@ interface MovieInfo {
     director?: string;
     genre?: string;
     releasedate?: string;
+    release_date?: string;
     rating?: string;
     duration?: string;
+    runtime?: string;
     backdrop_path?: string[];
     movie_image?: string;
     tmdb_id?: string;
+    youtube_trailer?: string;
   };
   movie_data: {
     stream_id: number;
@@ -43,16 +47,18 @@ export default function MovieDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { streamId, streamType } = params;
+  const { currentProfile, userCode } = useAuth();
 
   const [movieInfo, setMovieInfo] = useState<MovieInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [resumeTime, setResumeTime] = useState(0);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchProgress, setWatchProgress] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     loadMovieInfo();
-    checkFavoriteStatus();
-    checkResumeTime();
+    checkWatchlistStatus();
+    checkWatchProgress();
   }, []);
 
   const loadMovieInfo = async () => {
@@ -62,69 +68,105 @@ export default function MovieDetailsScreen() {
       setMovieInfo(response.data);
     } catch (error) {
       console.error('Error loading movie info:', error);
-      Alert.alert('Erreur', 'Impossible de charger les informations du film');
+      Alert.alert('❌ Erreur', 'Impossible de charger les informations du film');
     } finally {
       setLoading(false);
     }
   };
 
-  const checkFavoriteStatus = async () => {
+  const checkWatchlistStatus = async () => {
+    if (!userCode || !currentProfile) return;
+    
     try {
-      const favorites = await AsyncStorage.getItem('favorites_movies');
-      if (favorites) {
-        const favArray = JSON.parse(favorites);
-        setIsFavorite(favArray.includes(streamId));
-      }
+      const response = await watchlistAPI.checkWatchlist(
+        userCode,
+        currentProfile.name,
+        streamId as string
+      );
+      setInWatchlist(response.data.in_watchlist);
     } catch (error) {
-      console.error('Error checking favorite:', error);
+      console.error('Error checking watchlist:', error);
     }
   };
 
-  const checkResumeTime = async () => {
+  const checkWatchProgress = async () => {
+    if (!userCode || !currentProfile) return;
+    
     try {
-      const resumeData = await AsyncStorage.getItem(`resume_movie_${streamId}`);
-      if (resumeData) {
-        const data = JSON.parse(resumeData);
-        setResumeTime(data.position || 0);
+      const response = await progressAPI.getProgress(
+        userCode,
+        currentProfile.name,
+        streamId as string
+      );
+      
+      if (response.data.has_progress) {
+        setWatchProgress(response.data);
       }
     } catch (error) {
-      console.error('Error checking resume time:', error);
+      console.error('Error checking progress:', error);
     }
   };
 
-  const toggleFavorite = async () => {
+  const toggleWatchlist = async () => {
+    if (!userCode || !currentProfile || !movieInfo) return;
+    
+    setActionLoading(true);
     try {
-      const favorites = await AsyncStorage.getItem('favorites_movies');
-      let favArray: string[] = favorites ? JSON.parse(favorites) : [];
-
-      if (isFavorite) {
-        // Retirer des favoris
-        favArray = favArray.filter(id => id !== streamId);
-        Alert.alert('✅ Retiré', 'Film retiré des favoris');
+      if (inWatchlist) {
+        await watchlistAPI.removeFromWatchlist(
+          userCode,
+          currentProfile.name,
+          streamId as string
+        );
+        setInWatchlist(false);
+        Alert.alert('✅', 'Retiré de Ma liste');
       } else {
-        // Ajouter aux favoris
-        favArray.push(streamId as string);
-        Alert.alert('✅ Ajouté', 'Film ajouté aux favoris');
+        const movieData = {
+          stream_id: streamId,
+          name: movieInfo.info.name,
+          stream_icon: movieInfo.info.movie_image,
+          rating: movieInfo.info.rating,
+        };
+        
+        await watchlistAPI.addToWatchlist(
+          userCode,
+          currentProfile.name,
+          streamId as string,
+          'movie',
+          movieData
+        );
+        setInWatchlist(true);
+        Alert.alert('✅', 'Ajouté à Ma liste');
       }
-
-      await AsyncStorage.setItem('favorites_movies', JSON.stringify(favArray));
-      setIsFavorite(!isFavorite);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      Alert.alert('Erreur', 'Impossible de modifier les favoris');
+      console.error('Error toggling watchlist:', error);
+      Alert.alert('❌ Erreur', 'Impossible de modifier Ma liste');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handlePlay = (resume: boolean = false) => {
+    const startTime = resume && watchProgress ? watchProgress.current_time : 0;
+    
     router.push({
       pathname: '/player',
       params: {
         streamId: streamId as string,
         streamType: 'movie',
         title: movieInfo?.info.name || 'Film',
-        resumePosition: resume ? resumeTime.toString() : '0',
+        resumePosition: startTime.toString(),
       },
     });
+  };
+
+  const openTrailer = () => {
+    if (movieInfo?.info.youtube_trailer) {
+      Alert.alert('🎬 Bande-annonce', 'Ouverture de la bande-annonce...');
+      // TODO: Implémenter l'ouverture de la vidéo YouTube
+    } else {
+      Alert.alert('😔', 'Aucune bande-annonce disponible');
+    }
   };
 
   if (loading) {
@@ -148,65 +190,165 @@ export default function MovieDetailsScreen() {
   }
 
   const info = movieInfo.info;
-  const posterUrl = info.movie_image || info.backdrop_path?.[0] || '';
+  const backdropUrl = info.backdrop_path?.[0] || info.movie_image || '';
+  const releaseYear = info.releasedate || info.release_date || '';
+  const duration = info.duration || info.runtime || '';
+  const hasProgress = watchProgress && watchProgress.percentage > 5 && watchProgress.percentage < 95;
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      <ScrollView style={styles.scrollView}>
-        {/* Header avec image de fond */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header avec image de fond Netflix style */}
         <View style={styles.headerContainer}>
-          {posterUrl ? (
-            <>
-              <Image
-                source={{ uri: posterUrl }}
-                style={styles.backdrop}
-                resizeMode="cover"
-              />
-              <View style={styles.backdropGradient} />
-            </>
+          {backdropUrl ? (
+            <Image
+              source={{ uri: backdropUrl }}
+              style={styles.backdrop}
+              resizeMode="cover"
+            />
           ) : (
             <View style={[styles.backdrop, styles.backdropPlaceholder]}>
-              <Ionicons name="film" size={80} color="#666" />
+              <Ionicons name="film" size={100} color="#444" />
             </View>
           )}
+          
+          {/* Gradient overlay pour effet Netflix */}
+          <LinearGradient
+            colors={['transparent', 'rgba(20,20,20,0.7)', '#141414']}
+            style={styles.backdropGradient}
+          />
 
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-            <Ionicons name="close" size={32} color="#fff" />
+          {/* Bouton retour */}
+          <TouchableOpacity style={styles.backIconButton} onPress={() => router.back()}>
+            <View style={styles.backIconCircle}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </View>
           </TouchableOpacity>
+
+          {/* Titre et info au-dessus de l'image */}
+          <View style={styles.titleOverlay}>
+            <Text style={styles.title}>{info.name}</Text>
+            
+            {/* Métadonnées principales */}
+            <View style={styles.mainMetadata}>
+              {info.rating && (
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={16} color="#FFD700" />
+                  <Text style={styles.ratingText}>{parseFloat(info.rating).toFixed(1)}</Text>
+                </View>
+              )}
+              {releaseYear && (
+                <Text style={styles.metadataText}>{releaseYear.substring(0, 4)}</Text>
+              )}
+              {duration && (
+                <Text style={styles.metadataText}>{duration}</Text>
+              )}
+            </View>
+          </View>
         </View>
 
-        {/* Informations du film */}
+        {/* Contenu principal */}
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>{info.name}</Text>
-
-          {/* Métadonnées */}
-          <View style={styles.metadataContainer}>
-            {info.rating && (
-              <View style={styles.metadataItem}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.metadataText}>{info.rating}/10</Text>
-              </View>
-            )}
-            {info.releasedate && (
-              <View style={styles.metadataItem}>
-                <Ionicons name="calendar" size={16} color="#888" />
-                <Text style={styles.metadataText}>{info.releasedate}</Text>
-              </View>
-            )}
-            {info.duration && (
-              <View style={styles.metadataItem}>
-                <Ionicons name="time" size={16} color="#888" />
-                <Text style={styles.metadataText}>{info.duration}</Text>
-              </View>
+          
+          {/* Boutons d'action principaux - Style Netflix */}
+          <View style={styles.primaryActionsContainer}>
+            {hasProgress ? (
+              <>
+                {/* Bouton Reprendre */}
+                <TouchableOpacity
+                  style={styles.playButton}
+                  onPress={() => handlePlay(true)}
+                >
+                  <Ionicons name="play" size={28} color="#000" />
+                  <Text style={styles.playButtonText}>
+                    Reprendre
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Progression visuelle */}
+                <View style={styles.progressIndicator}>
+                  <View style={styles.progressBarBackground}>
+                    <View 
+                      style={[
+                        styles.progressBarFill, 
+                        { width: `${watchProgress.percentage}%` }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.progressText}>
+                    {Math.round(watchProgress.percentage)}% regardé
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={() => handlePlay(false)}
+              >
+                <Ionicons name="play" size={28} color="#000" />
+                <Text style={styles.playButtonText}>Regarder</Text>
+              </TouchableOpacity>
             )}
           </View>
 
-          {/* Genre */}
+          {/* Boutons secondaires */}
+          <View style={styles.secondaryActionsContainer}>
+            {/* Regarder plus tard */}
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={toggleWatchlist}
+              disabled={actionLoading}
+            >
+              <View style={styles.secondaryButtonContent}>
+                <Ionicons
+                  name={inWatchlist ? 'checkmark-circle' : 'add-circle-outline'}
+                  size={32}
+                  color={inWatchlist ? '#00AA13' : '#fff'}
+                />
+                <Text style={styles.secondaryButtonText}>Ma liste</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Regarder depuis le début (si en cours) */}
+            {hasProgress && (
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => handlePlay(false)}
+              >
+                <View style={styles.secondaryButtonContent}>
+                  <Ionicons name="refresh-circle-outline" size={32} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Recommencer</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Bande annonce */}
+            {info.youtube_trailer && (
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={openTrailer}
+              >
+                <View style={styles.secondaryButtonContent}>
+                  <Ionicons name="play-circle-outline" size={32} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Bande-annonce</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Synopsis */}
+          {info.plot && (
+            <View style={styles.section}>
+              <Text style={styles.plotText}>{info.plot}</Text>
+            </View>
+          )}
+
+          {/* Genre tags */}
           {info.genre && (
             <View style={styles.genreContainer}>
-              {info.genre.split(',').map((genre, index) => (
+              {info.genre.split(',').slice(0, 4).map((genre, index) => (
                 <View key={index} style={styles.genreChip}>
                   <Text style={styles.genreText}>{genre.trim()}</Text>
                 </View>
@@ -214,74 +356,22 @@ export default function MovieDetailsScreen() {
             </View>
           )}
 
-          {/* Boutons d'action */}
-          <View style={styles.actionsContainer}>
-            {resumeTime > 0 ? (
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={() => handlePlay(true)}
-              >
-                <Ionicons name="play-skip-forward" size={24} color="#fff" />
-                <Text style={styles.playButtonText}>Reprendre</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={() => handlePlay(false)}
-              >
-                <Ionicons name="play" size={24} color="#fff" />
-                <Text style={styles.playButtonText}>Lire</Text>
-              </TouchableOpacity>
+          {/* Informations supplémentaires */}
+          <View style={styles.infoSection}>
+            {info.director && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Réalisateur :</Text>
+                <Text style={styles.infoValue}>{info.director}</Text>
+              </View>
             )}
-
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={toggleFavorite}
-            >
-              <Ionicons
-                name={isFavorite ? 'heart' : 'heart-outline'}
-                size={24}
-                color={isFavorite ? '#E50914' : '#fff'}
-              />
-              <Text style={styles.favoriteButtonText}>
-                {isFavorite ? 'Favoris' : 'Ajouter'}
-              </Text>
-            </TouchableOpacity>
+            
+            {info.cast && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Casting :</Text>
+                <Text style={styles.infoValue}>{info.cast}</Text>
+              </View>
+            )}
           </View>
-
-          {resumeTime > 0 && (
-            <TouchableOpacity
-              style={styles.restartButton}
-              onPress={() => handlePlay(false)}
-            >
-              <Ionicons name="refresh" size={20} color="#fff" />
-              <Text style={styles.restartButtonText}>Regarder depuis le début</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Synopsis */}
-          {info.plot && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Synopsis</Text>
-              <Text style={styles.plotText}>{info.plot}</Text>
-            </View>
-          )}
-
-          {/* Réalisateur */}
-          {info.director && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Réalisateur</Text>
-              <Text style={styles.sectionText}>{info.director}</Text>
-            </View>
-          )}
-
-          {/* Casting */}
-          {info.cast && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Casting</Text>
-              <Text style={styles.sectionText}>{info.cast}</Text>
-            </View>
-          )}
         </View>
       </ScrollView>
     </View>
@@ -324,7 +414,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    height: height * 0.5,
+    height: height * 0.6,
     position: 'relative',
   },
   backdrop: {
@@ -341,44 +431,128 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '50%',
-    backgroundColor: 'transparent',
-    backgroundImage: 'linear-gradient(to bottom, transparent, #141414)',
+    height: '70%',
   },
-  closeButton: {
+  backIconButton: {
     position: 'absolute',
-    top: 60,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    top: 50,
+    left: 16,
+    zIndex: 10,
+  },
+  backIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  contentContainer: {
-    padding: 16,
+  titleOverlay: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  metadataContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 16,
-  },
-  metadataItem: {
+  mainMetadata: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
     gap: 6,
   },
+  ratingText: {
+    fontSize: 16,
+    color: '#FFD700',
+    fontWeight: 'bold',
+  },
   metadataText: {
-    fontSize: 14,
-    color: '#ccc',
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  contentContainer: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  primaryActionsContainer: {
+    marginBottom: 24,
+  },
+  playButton: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 8,
+    gap: 12,
+  },
+  playButtonText: {
+    color: '#000',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  progressIndicator: {
+    marginTop: 12,
+  },
+  progressBarBackground: {
+    height: 4,
+    backgroundColor: '#333',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#E50914',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 6,
+  },
+  secondaryActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 32,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+  },
+  secondaryButtonContent: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  plotText: {
+    fontSize: 15,
+    color: '#ddd',
+    lineHeight: 24,
   },
   genreContainer: {
     flexDirection: 'row',
@@ -390,78 +564,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 20,
   },
   genreText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#fff',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  playButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#E50914',
-    paddingVertical: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  favoriteButton: {
-    flexDirection: 'row',
-    backgroundColor: '#333',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  favoriteButtonText: {
-    color: '#fff',
-    fontSize: 16,
     fontWeight: '600',
   },
-  restartButton: {
-    flexDirection: 'row',
-    backgroundColor: '#222',
-    paddingVertical: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
+  infoSection: {
+    backgroundColor: '#1f1f1f',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 24,
   },
-  restartButtonText: {
-    color: '#fff',
+  infoRow: {
+    marginBottom: 16,
+  },
+  infoLabel: {
     fontSize: 14,
+    color: '#888',
+    marginBottom: 6,
+    fontWeight: '600',
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  infoValue: {
+    fontSize: 15,
     color: '#fff',
-    marginBottom: 12,
-  },
-  plotText: {
-    fontSize: 15,
-    color: '#ccc',
-    lineHeight: 22,
-  },
-  sectionText: {
-    fontSize: 15,
-    color: '#ccc',
     lineHeight: 22,
   },
 });
