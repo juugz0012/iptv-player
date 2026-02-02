@@ -263,21 +263,57 @@ export default function SeriesScreen() {
         <Text style={styles.title}>Séries</Text>
       </View>
 
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher une série..."
-          placeholderTextColor="#666"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#666" />
-          </TouchableOpacity>
-        ) : null}
+      {/* Tabs: Toutes les séries / Ma liste */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'all' && styles.tabActive]}
+          onPress={() => setSelectedTab('all')}
+        >
+          <Ionicons 
+            name="tv" 
+            size={20} 
+            color={selectedTab === 'all' ? '#E50914' : '#888'} 
+          />
+          <Text style={[styles.tabText, selectedTab === 'all' && styles.tabTextActive]}>
+            Toutes les séries
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'watchlist' && styles.tabActive]}
+          onPress={() => {
+            setSelectedTab('watchlist');
+            loadWatchlist();
+          }}
+        >
+          <Ionicons 
+            name="bookmark" 
+            size={20} 
+            color={selectedTab === 'watchlist' ? '#E50914' : '#888'} 
+          />
+          <Text style={[styles.tabText, selectedTab === 'watchlist' && styles.tabTextActive]}>
+            Ma Liste ({watchlist.length})
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {selectedTab === 'all' ? (
+        <>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher une série..."
+              placeholderTextColor="#666"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#666" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
       <View style={styles.categoriesScroll}>
         <FlatList
