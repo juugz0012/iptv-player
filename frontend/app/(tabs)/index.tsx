@@ -44,6 +44,14 @@ export default function HomeScreen() {
     loadWatchlist();
   }, []);
 
+  // Recharger la watchlist quand la page est focalisée
+  useEffect(() => {
+    const unsubscribe = router.subscribe?.(() => {
+      loadWatchlist();
+    });
+    return unsubscribe;
+  }, []);
+
   const loadWatchlist = async () => {
     if (!userCode || !currentProfile) {
       console.log('❌ No userCode or currentProfile');
