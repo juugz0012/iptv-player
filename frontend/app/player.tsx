@@ -86,9 +86,9 @@ export default function PlayerScreen() {
       let extension = 'm3u8';
       
       if (streamType === 'live') {
-        // Pour la TV en direct, utiliser .ts par défaut
-        extension = 'ts';
-        console.log('📺 Live TV détecté - Extension: .ts');
+        // Pour la TV en direct, utiliser .m3u8 pour compatibilité HLS
+        extension = 'm3u8';
+        console.log('📺 Live TV détecté - Extension: .m3u8 (HLS)');
       } else if (streamType === 'movie') {
         // Pour les films, récupérer l'extension depuis l'API
         try {
