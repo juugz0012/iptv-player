@@ -232,7 +232,7 @@ export default function HomeScreen() {
                     <View style={styles.watchlistRating}>
                       <Ionicons name="star" size={12} color="#FFD700" />
                       <Text style={styles.watchlistRatingText}>
-                        {parseFloat(item.movie_data.rating).toFixed(1)}
+                        {String(parseFloat(item.movie_data.rating).toFixed(1))}
                       </Text>
                     </View>
                   )}
