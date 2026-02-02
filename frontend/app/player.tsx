@@ -629,6 +629,10 @@ const styles = StyleSheet.create({
   videoContainer: {
     flex: 1,
   },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
   webView: {
     flex: 1,
     backgroundColor: '#000',
