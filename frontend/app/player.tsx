@@ -151,7 +151,33 @@ export default function PlayerScreen() {
     setShowControls(!showControls);
   };
 
+  const toggleOrientation = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('Info', 'La rotation n\'est pas disponible sur le web');
+        return;
+      }
+
+      if (isLandscape) {
+        // Revenir en portrait
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        setIsLandscape(false);
+      } else {
+        // Passer en paysage
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        setIsLandscape(true);
+      }
+    } catch (error) {
+      console.error('Error toggling orientation:', error);
+    }
+  };
+
   const handleBack = async () => {
+    // Déverrouiller l'orientation avant de quitter
+    if (Platform.OS !== 'web') {
+      await ScreenOrientation.unlockAsync();
+    }
+    
     if (streamType === 'movie') {
       await saveProgress();
     }
