@@ -82,10 +82,15 @@ export default function PlayerScreen() {
     try {
       setLoading(true);
       
-      // Pour les films, récupérer d'abord les infos pour connaître l'extension
+      // Déterminer l'extension selon le type de stream
       let extension = 'm3u8';
       
-      if (streamType === 'movie') {
+      if (streamType === 'live') {
+        // Pour la TV en direct, utiliser .ts par défaut
+        extension = 'ts';
+        console.log('📺 Live TV détecté - Extension: .ts');
+      } else if (streamType === 'movie') {
+        // Pour les films, récupérer l'extension depuis l'API
         try {
           const movieInfo = await xtreamAPI.getVodInfo(streamId as string);
           const containerExt = movieInfo.data?.movie_data?.container_extension;
@@ -93,12 +98,17 @@ export default function PlayerScreen() {
           if (containerExt) {
             extension = containerExt;
             console.log('📦 Container extension détecté:', extension);
+          } else {
+            // Utiliser mp4 par défaut pour les films
+            extension = 'mp4';
           }
         } catch (error) {
           console.error('Erreur lors de la récupération des infos:', error);
-          // Utiliser mp4 par défaut pour les films
           extension = 'mp4';
         }
+      } else if (streamType === 'series') {
+        // Pour les séries, utiliser mp4 par défaut
+        extension = 'mp4';
       }
       
       setStreamExtension(extension);
