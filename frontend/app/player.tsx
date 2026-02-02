@@ -37,6 +37,12 @@ export default function PlayerScreen() {
   const { streamId, streamType, title, resumePosition } = params;
   const { currentProfile, userCode } = useAuth();
 
+  // expo-video player (pour Live TV uniquement)
+  const player = useVideoPlayer(streamUrl, (player) => {
+    player.loop = false;
+    player.play();
+  });
+
   useEffect(() => {
     loadStream();
 
