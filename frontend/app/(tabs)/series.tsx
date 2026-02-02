@@ -89,7 +89,12 @@ export default function SeriesScreen() {
     try {
       setLoading(true);
       const response = await xtreamAPI.getSeriesCategories();
-      setCategories(response.data || []);
+      const categoriesData = response.data || [];
+      setCategories(categoriesData);
+      
+      // Mettre à jour le cache
+      cacheRef.current.categories = categoriesData;
+      cacheRef.current.lastLoadTime = Date.now();
       
       // Load all series by default
       loadSeries();
@@ -113,6 +118,10 @@ export default function SeriesScreen() {
       setSeries(seriesData);
       setFilteredSeries(seriesData);
       setSelectedCategory(categoryId || null);
+      
+      // Mettre à jour le cache
+      cacheRef.current.series = seriesData;
+      cacheRef.current.lastLoadTime = Date.now();
     } catch (error: any) {
       console.error('Error loading series:', error);
       Alert.alert(
