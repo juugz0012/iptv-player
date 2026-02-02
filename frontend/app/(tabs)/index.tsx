@@ -19,12 +19,47 @@ import { xtreamAPI, watchlistAPI } from '../../utils/api';
 import axios from 'axios';
 
 const { width } = Dimensions.get('window');
+const POSTER_WIDTH = 120;
+const POSTER_HEIGHT = 180;
+
+interface WatchlistItem {
+  stream_id: string;
+  stream_type: string;
+  movie_data: {
+    name: string;
+    stream_icon?: string;
+    rating?: string;
+  };
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const { currentProfile, userCode } = useAuth();
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(true);
+
+  useEffect(() => {
+    loadWatchlist();
+  }, []);
+
+  const loadWatchlist = async () => {
+    if (!userCode || !currentProfile) {
+      setLoadingWatchlist(false);
+      return;
+    }
+    
+    try {
+      setLoadingWatchlist(true);
+      const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
+      setWatchlist(response.data || []);
+    } catch (error) {
+      console.error('Error loading watchlist:', error);
+    } finally {
+      setLoadingWatchlist(false);
+    }
+  };
 
   const categories = [
     {
