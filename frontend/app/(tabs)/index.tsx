@@ -69,13 +69,15 @@ export default function HomeScreen() {
       const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
       const allItems = response.data || [];
       
-      // Séparer films et séries
-      const movies = allItems.filter((item: any) => item.stream_type !== 'series');
+      // Séparer films, séries et TV
+      const movies = allItems.filter((item: any) => item.stream_type === 'movie');
       const series = allItems.filter((item: any) => item.stream_type === 'series');
+      const tv = allItems.filter((item: any) => item.stream_type === 'live_tv');
       
-      console.log('✅ Watchlist loaded:', movies.length, 'films,', series.length, 'séries');
+      console.log('✅ Watchlist loaded:', movies.length, 'films,', series.length, 'séries,', tv.length, 'chaînes TV');
       setWatchlist(movies);
       setSeriesWatchlist(series);
+      setTvWatchlist(tv);
     } catch (error) {
       console.error('❌ Error loading watchlist:', error);
     } finally {
