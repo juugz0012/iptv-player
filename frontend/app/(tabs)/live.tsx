@@ -56,7 +56,8 @@ interface WatchlistItem {
 export default function LiveTVScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [streams, setStreams] = useState<Stream[]>([]);
-  const [filteredStreams, setFilteredStreams] = useState<Stream[]>([]);
+  const [groupedChannels, setGroupedChannels] = useState<GroupedChannel[]>([]);
+  const [filteredChannels, setFilteredChannels] = useState<GroupedChannel[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,8 @@ export default function LiveTVScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<WatchlistItem[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
+  const [selectedChannel, setSelectedChannel] = useState<GroupedChannel | null>(null);
+  const [showQualityModal, setShowQualityModal] = useState(false);
   
   const router = useRouter();
   const { currentProfile, userCode } = useAuth();
