@@ -607,6 +607,63 @@ async def get_all_watch_progress(user_code: str, profile_name: str):
     
     return progress_list
 
+# ==================== ADMIN NOTIFICATIONS ====================
+
+@api_router.post("/admin/notification")
+async def create_notification(notification: AdminNotificationCreate):
+    """Admin: Create or update the notification message"""
+    # Désactiver toutes les notifications précédentes
+    await db.notifications.update_many({}, {"$set": {"is_active": False}})
+    
+    # Créer la nouvelle notification
+    notification_dict = {
+        "message": notification.message,
+        "is_active": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.notifications.insert_one(notification_dict)
+    
+    return {
+        "message": "Notification créée avec succès",
+        "id": str(result.inserted_id)
+    }
+
+@api_router.get("/admin/notification")
+async def get_admin_notification():
+    """Admin: Get current notification"""
+    notification = await db.notifications.find_one({"is_active": True})
+    
+    if not notification:
+        return {"has_notification": False, "message": ""}
+    
+    return {
+        "has_notification": True,
+        "message": notification["message"],
+        "created_at": notification.get("created_at")
+    }
+
+@api_router.get("/notification")
+async def get_notification():
+    """Public: Get active notification for users"""
+    notification = await db.notifications.find_one({"is_active": True})
+    
+    if not notification:
+        return {"has_notification": False, "message": ""}
+    
+    return {
+        "has_notification": True,
+        "message": notification["message"]
+    }
+
+@api_router.delete("/admin/notification")
+async def delete_notification():
+    """Admin: Deactivate current notification"""
+    await db.notifications.update_many({}, {"$set": {"is_active": False}})
+    
+    return {"message": "Notification désactivée"}
+
 # ==================== XTREAM CODES PROXY ROUTES ====================
 
 @api_router.get("/xtream/info")
