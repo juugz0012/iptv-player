@@ -347,6 +347,9 @@ export default function LiveTVScreen() {
             <Text style={styles.channelName} numberOfLines={2}>
               {item.baseName}
             </Text>
+            
+            {/* EPG - Programme en cours */}
+            <EPGCard streamId={firstStream.stream_id.toString()} compact={true} />
           </View>
 
           {/* Badge Live */}
