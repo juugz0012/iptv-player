@@ -4,6 +4,8 @@ import axios from 'axios';
 // When deployed, the frontend and backend share the same domain
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
+console.log('[API Config] Using backend URL:', API_URL);
+
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   timeout: 30000,
