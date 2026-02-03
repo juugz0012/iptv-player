@@ -41,6 +41,12 @@ interface Stream {
   category_id: string;
 }
 
+interface GroupedChannel {
+  baseName: string;
+  streams: Stream[];
+  stream_icon?: string;
+}
+
 interface WatchlistItem {
   stream_id: string;
   stream_type: string;
