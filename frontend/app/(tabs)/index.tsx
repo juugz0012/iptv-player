@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { xtreamAPI, watchlistAPI } from '../../utils/api';
 import axios from 'axios';
+import NotificationBanner from '../../components/NotificationBanner';
 
 const { width } = Dimensions.get('window');
 const POSTER_WIDTH = 120;
