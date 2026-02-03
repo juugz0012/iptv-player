@@ -34,18 +34,18 @@ export default function NotificationBanner() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Ionicons
-          name="information-circle"
-          size={Platform.isTV ? 28 : 20}
-          color="#E50914"
+          name="megaphone"
+          size={Platform.isTV ? 32 : 24}
+          color="#fff"
           style={styles.icon}
         />
-        <Text style={styles.text} numberOfLines={2}>
+        <Text style={styles.text} numberOfLines={3}>
           {notification}
         </Text>
         <TVFocusable onPress={handleDismiss} style={styles.closeButton}>
           <Ionicons
             name="close"
-            size={Platform.isTV ? 28 : 20}
+            size={Platform.isTV ? 28 : 22}
             color="#fff"
           />
         </TVFocusable>
