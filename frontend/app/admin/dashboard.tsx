@@ -62,6 +62,14 @@ export default function AdminDashboardScreen() {
       route: '/admin/create-user',
     },
     {
+      id: 'notifications',
+      title: 'Notifications',
+      description: 'Gérer les messages d\'information pour les utilisateurs',
+      icon: 'notifications',
+      color: '#FF9800',
+      route: '/admin/notifications',
+    },
+    {
       id: 'dns',
       title: 'Gestion DNS',
       description: 'Modifier les DNS de tous les utilisateurs',
