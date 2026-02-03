@@ -117,8 +117,8 @@ class WatchProgressUpdate(BaseModel):
 # ==================== HELPER FUNCTIONS ====================
 
 def generate_user_code(length: int = 8) -> str:
-    """Generate a unique user code"""
-    characters = string.ascii_uppercase + string.digits
+    """Generate a unique user code with only digits"""
+    characters = string.digits
     return ''.join(secrets.choice(characters) for _ in range(length))
 
 async def get_xtream_config() -> Dict[str, Any]:
