@@ -79,10 +79,11 @@ export default function ProfilesScreen() {
       setIsChildProfile(false);
     } catch (error: any) {
       console.error('Error creating profile:', error);
-      Alert.alert(
-        'Erreur',
-        error.response?.data?.detail || 'Impossible de créer le profil'
-      );
+      let errorMessage = 'Impossible de créer le profil';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      Alert.alert('Erreur', errorMessage);
     } finally {
       setAddingProfile(false);
     }
@@ -132,20 +133,21 @@ export default function ProfilesScreen() {
       
       <View style={styles.header}>
         <Text style={styles.title}>Qui regarde ?</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={24} color="#fff" />
-        </TouchableOpacity>
+        <TVFocusable onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={Platform.isTV ? 32 : 24} color="#fff" />
+        </TVFocusable>
       </View>
 
       <FlatList
         data={profiles}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={Platform.isTV ? 3 : 2}
         contentContainerStyle={styles.profilesList}
         renderItem={({ item, index }) => (
-          <TouchableOpacity
+          <TVFocusable
             style={styles.profileCard}
             onPress={() => handleSelectProfile(item)}
+            hasTVPreferredFocus={index === 0}
           >
             <View
               style={[
@@ -154,42 +156,41 @@ export default function ProfilesScreen() {
               ]}
             >
               <Ionicons
-                name={getProfileIcon(item) as any}
-                size={64}
+                name={getProfileIcon(item)}
+                size={Platform.isTV ? 80 : 60}
                 color="#fff"
               />
             </View>
             <Text style={styles.profileName}>{item.name}</Text>
             {item.is_child && (
-              <Text style={styles.profileBadge}>Enfant</Text>
+              <Text style={styles.childBadge}>Enfant</Text>
             )}
-          </TouchableOpacity>
+          </TVFocusable>
         )}
-        ListFooterComponent={
-          <TouchableOpacity
-            style={styles.profileCard}
-            onPress={() => setShowAddModal(true)}
-          >
-            <View style={[styles.profileAvatar, styles.addProfileAvatar]}>
-              <Ionicons name="add" size={64} color="#fff" />
-            </View>
-            <Text style={styles.profileName}>Ajouter un profil</Text>
-          </TouchableOpacity>
-        }
       />
+
+      {profiles.length < 5 && (
+        <TVFocusable
+          style={styles.addButton}
+          onPress={() => setShowAddModal(true)}
+        >
+          <Ionicons name="add-circle" size={Platform.isTV ? 32 : 24} color="#E50914" />
+          <Text style={styles.addButtonText}>Ajouter un profil</Text>
+        </TVFocusable>
+      )}
 
       <Modal
         visible={showAddModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Nouveau profil</Text>
-
+            
             <TextInput
-              style={styles.modalInput}
+              style={styles.input}
               placeholder="Nom du profil"
               placeholderTextColor="#666"
               value={newProfileName}
@@ -197,19 +198,9 @@ export default function ProfilesScreen() {
               maxLength={20}
             />
 
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => setIsChildProfile(!isChildProfile)}
-            >
-              <View style={[styles.checkbox, isChildProfile && styles.checkboxChecked]}>
-                {isChildProfile && <Ionicons name="checkmark" size={20} color="#fff" />}
-              </View>
-              <Text style={styles.checkboxLabel}>Profil enfant</Text>
-            </TouchableOpacity>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
+            <View style={styles.modalActions}>
+              <TVFocusable
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowAddModal(false);
                   setNewProfileName('');
@@ -217,10 +208,10 @@ export default function ProfilesScreen() {
                 }}
               >
                 <Text style={styles.modalButtonText}>Annuler</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
+              </TVFocusable>
+              
+              <TVFocusable
+                style={[styles.modalButton, styles.createButton, addingProfile && styles.buttonDisabled]}
                 onPress={handleAddProfile}
                 disabled={addingProfile}
               >
@@ -229,7 +220,7 @@ export default function ProfilesScreen() {
                 ) : (
                   <Text style={styles.modalButtonText}>Créer</Text>
                 )}
-              </TouchableOpacity>
+              </TVFocusable>
             </View>
           </View>
         </View>
@@ -251,121 +242,124 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
+    padding: Platform.isTV ? 40 : 20,
+    paddingTop: Platform.isTV ? 60 : 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: Platform.isTV ? 48 : 32,
     fontWeight: 'bold',
     color: '#fff',
   },
   logoutButton: {
-    padding: 8,
+    padding: Platform.isTV ? 15 : 10,
+    borderRadius: 8,
   },
   profilesList: {
-    padding: 20,
-    alignItems: 'center',
+    padding: Platform.isTV ? 40 : 20,
+    paddingBottom: Platform.isTV ? 100 : 80,
   },
   profileCard: {
+    flex: 1,
     alignItems: 'center',
-    margin: 20,
-    width: 150,
+    margin: Platform.isTV ? 20 : 10,
+    padding: Platform.isTV ? 30 : 20,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
   },
   profileAvatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
+    width: Platform.isTV ? 160 : 120,
+    height: Platform.isTV ? 160 : 120,
+    borderRadius: Platform.isTV ? 80 : 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  addProfileAvatar: {
-    backgroundColor: '#333',
-    borderWidth: 2,
-    borderColor: '#666',
-    borderStyle: 'dashed',
+    marginBottom: Platform.isTV ? 20 : 15,
   },
   profileName: {
-    fontSize: 16,
+    fontSize: Platform.isTV ? 24 : 18,
+    fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 4,
   },
-  profileBadge: {
-    fontSize: 12,
+  childBadge: {
+    marginTop: 8,
+    fontSize: Platform.isTV ? 16 : 12,
     color: '#00AA13',
-    fontWeight: 'bold',
+    fontWeight: '500',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Platform.isTV ? 25 : 15,
+    marginHorizontal: Platform.isTV ? 40 : 20,
+    marginBottom: Platform.isTV ? 40 : 20,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 2,
+    borderColor: '#E50914',
+    borderStyle: 'dashed',
+  },
+  addButtonText: {
+    marginLeft: 10,
+    fontSize: Platform.isTV ? 22 : 16,
+    color: '#E50914',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#222',
-    borderRadius: 12,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
+    width: Platform.isTV ? '50%' : '85%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: Platform.isTV ? 40 : 24,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: Platform.isTV ? 32 : 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 20,
+    marginBottom: Platform.isTV ? 30 : 20,
+    textAlign: 'center',
   },
-  modalInput: {
+  input: {
     backgroundColor: '#333',
     borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
+    padding: Platform.isTV ? 20 : 15,
+    fontSize: Platform.isTV ? 22 : 16,
     color: '#fff',
-    marginBottom: 20,
+    marginBottom: Platform.isTV ? 30 : 20,
+    borderWidth: 1,
+    borderColor: '#444',
   },
-  checkboxContainer: {
+  modalActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#666',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#E50914',
-    borderColor: '#E50914',
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: Platform.isTV ? 20 : 12,
   },
   modalButton: {
     flex: 1,
-    padding: 16,
+    padding: Platform.isTV ? 20 : 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 6,
+    justifyContent: 'center',
+    minHeight: Platform.isTV ? 60 : 50,
   },
-  modalButtonCancel: {
-    backgroundColor: '#444',
+  cancelButton: {
+    backgroundColor: '#333',
   },
-  modalButtonConfirm: {
+  createButton: {
     backgroundColor: '#E50914',
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: Platform.isTV ? 20 : 16,
     fontWeight: 'bold',
+    color: '#fff',
   },
 });
