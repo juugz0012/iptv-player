@@ -758,20 +758,20 @@ const styles = StyleSheet.create({
   },
   channelLogo: {
     width: '100%',
-    height: '70%',
+    height: '50%',
     backgroundColor: '#252525',
   },
   channelLogoPlaceholder: {
     width: '100%',
-    height: '70%',
+    height: '50%',
     backgroundColor: '#252525',
     justifyContent: 'center',
     alignItems: 'center',
   },
   channelInfo: {
     flex: 1,
-    padding: Platform.isTV ? 12 : 8,
-    justifyContent: 'center',
+    padding: Platform.isTV ? 8 : 6,
+    justifyContent: 'flex-start',
   },
   channelName: {
     fontSize: Platform.isTV ? 16 : 12,
