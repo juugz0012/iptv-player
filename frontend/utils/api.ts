@@ -41,6 +41,16 @@ export const adminAPI = {
   // New: Create user with Xtream verification in one step
   createUserWithXtream: (config: { dns_url: string; username: string; password: string; samsung_lg_dns?: string }, maxProfiles: number = 5) => 
     api.post('/admin/create-user-with-xtream', config, { params: { max_profiles: maxProfiles } }),
+  
+  // Notification APIs
+  createNotification: (message: string) => api.post('/admin/notification', { message }),
+  getAdminNotification: () => api.get('/admin/notification'),
+  deleteNotification: () => api.delete('/admin/notification'),
+};
+
+// Public notification API
+export const notificationAPI = {
+  getNotification: () => api.get('/notification'),
 };
 
 // Auth APIs
