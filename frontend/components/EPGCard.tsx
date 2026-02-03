@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { xtreamAPI } from '../utils/api';
+import axios from 'axios';
 
 interface EPGData {
   current: {
@@ -21,10 +21,16 @@ interface EPGData {
 
 interface EPGCardProps {
   streamId: string;
+  epgChannelId?: string;
+  xtreamConfig: {
+    dns_url: string;
+    username: string;
+    password: string;
+  };
   compact?: boolean;
 }
 
-export default function EPGCard({ streamId, compact = false }: EPGCardProps) {
+export default function EPGCard({ streamId, epgChannelId, xtreamConfig, compact = false }: EPGCardProps) {
   const [epg, setEpg] = useState<EPGData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,15 +42,140 @@ export default function EPGCard({ streamId, compact = false }: EPGCardProps) {
     try {
       setLoading(true);
       console.log('📡 Loading EPG for stream:', streamId);
-      const response = await xtreamAPI.getEPG(streamId);
-      console.log('📡 EPG response:', JSON.stringify(response.data));
-      setEpg(response.data);
+      
+      // Récupérer l'EPG directement depuis Xtream (côté client)
+      const epgUrl = `${xtreamConfig.dns_url}/xmltv.php?username=${xtreamConfig.username}&password=${xtreamConfig.password}`;
+      
+      const response = await axios.get(epgUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15',
+        },
+        timeout: 10000,
+      });
+      
+      // Parser XML (version simple pour React Native)
+      const xmlText = response.data;
+      
+      // Trouver le channel_id pour ce stream
+      const channelId = epgChannelId || streamId;
+      
+      // Chercher les programmes pour cette chaîne (parsing simple)
+      const currentProgram = parseCurrentProgram(xmlText, channelId);
+      const nextProgram = parseNextProgram(xmlText, channelId);
+      
+      console.log('📡 EPG loaded:', currentProgram ? 'Current found' : 'No current', nextProgram ? 'Next found' : 'No next');
+      
+      setEpg({
+        current: currentProgram,
+        next: nextProgram,
+      });
     } catch (error: any) {
-      console.log('❌ EPG error for', streamId, ':', error.message);
+      console.log('❌ EPG error:', error.message);
       setEpg({ current: null, next: null });
     } finally {
       setLoading(false);
     }
+  };
+
+  const parseCurrentProgram = (xmlText: string, channelId: string): any => {
+    try {
+      // Parsing simple du XML pour trouver le programme en cours
+      // Cette version est simplifiée - on pourrait utiliser une lib XML si nécessaire
+      const now = new Date();
+      
+      // Regex pour extraire les programmes de cette chaîne
+      const programmeRegex = new RegExp(
+        `<programme[^>]*channel="${channelId}"[^>]*start="([^"]*)"[^>]*stop="([^"]*)">.*?<title[^>]*>([^<]*)</title>.*?(?:<desc[^>]*>([^<]*)</desc>)?`,
+        'gs'
+      );
+      
+      const matches = [...xmlText.matchAll(programmeRegex)];
+      
+      for (const match of matches) {
+        const startStr = match[1].split(' ')[0]; // Format: YYYYMMDDHHmmss
+        const stopStr = match[2].split(' ')[0];
+        const title = match[3];
+        const description = match[4] || '';
+        
+        const startTime = parseXMLTime(startStr);
+        const stopTime = parseXMLTime(stopStr);
+        
+        if (startTime && stopTime && startTime <= now && now < stopTime) {
+          const progress = Math.floor(((now.getTime() - startTime.getTime()) / (stopTime.getTime() - startTime.getTime())) * 100);
+          
+          return {
+            title,
+            description,
+            start: formatTime(startTime),
+            end: formatTime(stopTime),
+            progress,
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('Error parsing current program:', error);
+      return null;
+    }
+  };
+
+  const parseNextProgram = (xmlText: string, channelId: string): any => {
+    try {
+      const now = new Date();
+      
+      const programmeRegex = new RegExp(
+        `<programme[^>]*channel="${channelId}"[^>]*start="([^"]*)"[^>]*stop="([^"]*)">.*?<title[^>]*>([^<]*)</title>`,
+        'gs'
+      );
+      
+      const matches = [...xmlText.matchAll(programmeRegex)];
+      
+      for (const match of matches) {
+        const startStr = match[1].split(' ')[0];
+        const stopStr = match[2].split(' ')[0];
+        const title = match[3];
+        
+        const startTime = parseXMLTime(startStr);
+        const stopTime = parseXMLTime(stopStr);
+        
+        if (startTime && startTime > now) {
+          return {
+            title,
+            description: '',
+            start: formatTime(startTime),
+            end: formatTime(stopTime),
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('Error parsing next program:', error);
+      return null;
+    }
+  };
+
+  const parseXMLTime = (timeStr: string): Date | null => {
+    try {
+      // Format: YYYYMMDDHHmmss
+      const year = parseInt(timeStr.substring(0, 4));
+      const month = parseInt(timeStr.substring(4, 6)) - 1;
+      const day = parseInt(timeStr.substring(6, 8));
+      const hour = parseInt(timeStr.substring(8, 10));
+      const minute = parseInt(timeStr.substring(10, 12));
+      const second = parseInt(timeStr.substring(12, 14));
+      
+      return new Date(year, month, day, hour, minute, second);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const formatTime = (date: Date): string => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   if (loading) {
