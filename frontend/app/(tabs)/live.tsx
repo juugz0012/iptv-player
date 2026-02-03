@@ -10,6 +10,8 @@ import {
   Image,
   Platform,
   Dimensions,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -84,14 +86,82 @@ export default function LiveTVScreen() {
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = streams.filter(stream =>
-        stream.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = groupedChannels.filter(channel =>
+        channel.baseName.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredStreams(filtered);
+      setFilteredChannels(filtered);
     } else {
-      setFilteredStreams(streams);
+      setFilteredChannels(groupedChannels);
     }
-  }, [searchQuery, streams]);
+  }, [searchQuery, groupedChannels]);
+
+  // Fonction pour extraire le nom de base (sans HD, FHD, SD, 4K, etc.)
+  const getBaseName = (name: string): string => {
+    // Supprimer les qualités courantes
+    const qualityKeywords = [
+      'UHD', '4K', 'FHD', 'HD', 'SD', 'HQ', 'LQ',
+      'HEVC', 'H265', 'H264',
+      'FULL HD', 'FULLHD',
+      '1080P', '1080p', '720P', '720p', '480P', '480p',
+      '(HD)', '(FHD)', '(SD)', '(4K)',
+      '[HD]', '[FHD]', '[SD]', '[4K]',
+    ];
+
+    let baseName = name.trim();
+    
+    // Supprimer les qualités
+    qualityKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\s*${keyword}\\s*`, 'gi');
+      baseName = baseName.replace(regex, ' ');
+    });
+
+    // Nettoyer les espaces multiples et trim
+    baseName = baseName.replace(/\s+/g, ' ').trim();
+    
+    return baseName;
+  };
+
+  // Fonction pour regrouper les chaînes par nom de base
+  const groupChannelsByName = (streamsList: Stream[]): GroupedChannel[] => {
+    const groups: { [key: string]: GroupedChannel } = {};
+
+    streamsList.forEach(stream => {
+      const baseName = getBaseName(stream.name);
+      
+      if (!groups[baseName]) {
+        groups[baseName] = {
+          baseName,
+          streams: [],
+          stream_icon: stream.stream_icon,
+        };
+      }
+      
+      groups[baseName].streams.push(stream);
+      
+      // Préférer l'icône d'un stream HD si disponible
+      if (stream.stream_icon && !groups[baseName].stream_icon) {
+        groups[baseName].stream_icon = stream.stream_icon;
+      }
+    });
+
+    // Trier les streams dans chaque groupe par qualité (HD > FHD > SD)
+    Object.values(groups).forEach(group => {
+      group.streams.sort((a, b) => {
+        const qualityOrder = ['4K', 'UHD', 'FHD', 'FULL HD', 'HD', 'SD', 'LQ'];
+        const getQualityIndex = (name: string) => {
+          for (let i = 0; i < qualityOrder.length; i++) {
+            if (name.toUpperCase().includes(qualityOrder[i])) {
+              return i;
+            }
+          }
+          return 999;
+        };
+        return getQualityIndex(a.name) - getQualityIndex(b.name);
+      });
+    });
+
+    return Object.values(groups);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -106,7 +176,6 @@ export default function LiveTVScreen() {
     try {
       setLoadingFavorites(true);
       const response = await watchlistAPI.getWatchlist(userCode, currentProfile.name);
-      // Filter only live_tv items
       const tvFavorites = response.data.filter((item: WatchlistItem) => item.stream_type === 'live_tv');
       setFavorites(tvFavorites);
       console.log('📺 Favorites TV loaded:', tvFavorites.length);
@@ -131,10 +200,10 @@ export default function LiveTVScreen() {
   };
 
   const loadStreams = async (categoryId?: string) => {
-    // Use cache if already loaded
     if (streamsCache.current.length > 0 && !categoryId) {
-      setStreams(streamsCache.current);
-      setFilteredStreams(streamsCache.current);
+      const grouped = groupChannelsByName(streamsCache.current);
+      setGroupedChannels(grouped);
+      setFilteredChannels(grouped);
       return;
     }
 
@@ -152,7 +221,11 @@ export default function LiveTVScreen() {
       }
       
       setStreams(loadedStreams);
-      setFilteredStreams(loadedStreams);
+      const grouped = groupChannelsByName(loadedStreams);
+      setGroupedChannels(grouped);
+      setFilteredChannels(grouped);
+      
+      console.log('📊 Groupes créés:', grouped.length);
     } catch (error: any) {
       console.error('❌ Error loading streams:', error);
       Alert.alert(
@@ -170,7 +243,19 @@ export default function LiveTVScreen() {
     loadStreams(categoryId);
   };
 
+  const handleChannelPress = (channel: GroupedChannel) => {
+    if (channel.streams.length === 1) {
+      // Une seule qualité, lancer directement
+      handlePlayStream(channel.streams[0]);
+    } else {
+      // Plusieurs qualités, afficher le modal
+      setSelectedChannel(channel);
+      setShowQualityModal(true);
+    }
+  };
+
   const handlePlayStream = (stream: Stream) => {
+    setShowQualityModal(false);
     router.push({
       pathname: '/player',
       params: {
@@ -185,16 +270,19 @@ export default function LiveTVScreen() {
     return favorites.some(fav => fav.stream_id === streamId.toString());
   };
 
-  const toggleFavorite = async (stream: Stream) => {
+  const isChannelFavorite = (channel: GroupedChannel): boolean => {
+    return channel.streams.some(stream => isFavorite(stream.stream_id));
+  };
+
+  const toggleFavorite = async (stream: Stream, e?: any) => {
+    if (e) e.stopPropagation();
     if (!userCode || !currentProfile) return;
 
     try {
       if (isFavorite(stream.stream_id)) {
-        // Remove from favorites
         await watchlistAPI.removeFromWatchlist(userCode, currentProfile.name, stream.stream_id.toString());
         Alert.alert('✅', 'Retiré de Ma Liste TV');
       } else {
-        // Add to favorites
         await watchlistAPI.addToWatchlist({
           user_code: userCode,
           profile_name: currentProfile.name,
@@ -216,32 +304,28 @@ export default function LiveTVScreen() {
     }
   };
 
-  const renderChannelCard = ({ item }: { item: Stream | WatchlistItem }) => {
-    const stream = 'stream_id' in item ? item : null;
-    const favorite = 'movie_data' in item ? item : null;
-    
-    const streamId = stream ? stream.stream_id : parseInt(favorite!.stream_id);
-    const streamName = stream ? stream.name : favorite!.movie_data.name;
-    const streamIcon = stream ? stream.stream_icon : favorite!.movie_data.stream_icon;
-    const streamData = stream || {
-      stream_id: parseInt(favorite!.stream_id),
-      name: favorite!.movie_data.name,
-      stream_icon: favorite!.movie_data.stream_icon,
-      num: favorite!.movie_data.num,
-      category_id: favorite!.movie_data.category_id,
-      stream_type: 'live',
-    } as Stream;
+  const getQualityLabel = (streamName: string): string => {
+    const name = streamName.toUpperCase();
+    if (name.includes('4K') || name.includes('UHD')) return '4K';
+    if (name.includes('FHD') || name.includes('FULL HD')) return 'FHD';
+    if (name.includes('HD')) return 'HD';
+    if (name.includes('SD')) return 'SD';
+    return 'STD';
+  };
+
+  const renderChannelCard = ({ item }: { item: GroupedChannel }) => {
+    const hasMultipleQualities = item.streams.length > 1;
+    const firstStream = item.streams[0];
 
     return (
       <View style={styles.channelCardContainer}>
         <TVFocusable
           style={styles.channelCard}
-          onPress={() => handlePlayStream(streamData)}
+          onPress={() => handleChannelPress(item)}
         >
-          {/* Logo de la chaîne */}
-          {streamIcon ? (
+          {item.stream_icon ? (
             <Image
-              source={{ uri: streamIcon }}
+              source={{ uri: item.stream_icon }}
               style={styles.channelLogo}
               resizeMode="contain"
             />
@@ -255,10 +339,9 @@ export default function LiveTVScreen() {
             </View>
           )}
 
-          {/* Nom de la chaîne */}
           <View style={styles.channelInfo}>
             <Text style={styles.channelName} numberOfLines={2}>
-              {streamName}
+              {item.baseName}
             </Text>
           </View>
 
@@ -267,18 +350,76 @@ export default function LiveTVScreen() {
             <View style={styles.liveIndicator} />
             <Text style={styles.liveText}>LIVE</Text>
           </View>
+
+          {/* Badge Qualités multiples */}
+          {hasMultipleQualities && (
+            <View style={styles.qualityBadge}>
+              <Ionicons name="options" size={Platform.isTV ? 16 : 12} color="#fff" />
+              <Text style={styles.qualityBadgeText}>{item.streams.length}</Text>
+            </View>
+          )}
         </TVFocusable>
 
-        {/* Bouton Favori */}
+        {/* Bouton Favori - Premier stream du groupe */}
         <TVFocusable
           style={styles.favoriteButton}
-          onPress={() => toggleFavorite(streamData)}
+          onPress={(e) => toggleFavorite(firstStream, e)}
         >
           <Ionicons
-            name={isFavorite(streamId) ? 'heart' : 'heart-outline'}
+            name={isChannelFavorite(item) ? 'heart' : 'heart-outline'}
             size={Platform.isTV ? 28 : 20}
-            color={isFavorite(streamId) ? '#E50914' : '#fff'}
+            color={isChannelFavorite(item) ? '#E50914' : '#fff'}
           />
+        </TVFocusable>
+      </View>
+    );
+  };
+
+  const renderFavoriteCard = ({ item }: { item: WatchlistItem }) => {
+    const stream: Stream = {
+      stream_id: parseInt(item.stream_id),
+      name: item.movie_data.name,
+      stream_icon: item.movie_data.stream_icon,
+      num: item.movie_data.num,
+      category_id: item.movie_data.category_id,
+      stream_type: 'live',
+    } as Stream;
+
+    return (
+      <View style={styles.channelCardContainer}>
+        <TVFocusable
+          style={styles.channelCard}
+          onPress={() => handlePlayStream(stream)}
+        >
+          {stream.stream_icon ? (
+            <Image
+              source={{ uri: stream.stream_icon }}
+              style={styles.channelLogo}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.channelLogoPlaceholder}>
+              <Ionicons name="tv" size={Platform.isTV ? 60 : 40} color="#666" />
+            </View>
+          )}
+
+          <View style={styles.channelInfo}>
+            <Text style={styles.channelName} numberOfLines={2}>
+              {getBaseName(stream.name)}
+            </Text>
+          </View>
+
+          <View style={styles.liveBadge}>
+            <View style={styles.liveIndicator} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+        </TVFocusable>
+
+        <TVFocusable
+          style={styles.favoriteButton}
+          onPress={(e) => toggleFavorite(stream, e)}
+        >
+          <Ionicons name="heart" size={Platform.isTV ? 28 : 20} color="#E50914" />
         </TVFocusable>
       </View>
     );
@@ -298,34 +439,25 @@ export default function LiveTVScreen() {
         <View style={styles.headerStats}>
           <Ionicons name="tv" size={Platform.isTV ? 28 : 20} color="#E50914" />
           <Text style={styles.headerStatsText}>
-            {filteredStreams.length} chaînes
+            {filteredChannels.length} chaînes
           </Text>
         </View>
       </View>
 
-      {/* Tabs: Toutes / Ma Liste TV */}
+      {/* Tabs */}
       <View style={styles.tabsContainer}>
         <TVFocusable
-          style={[
-            styles.tab,
-            activeTab === 'all' && styles.tabActive,
-          ]}
+          style={[styles.tab, activeTab === 'all' && styles.tabActive]}
           onPress={() => setActiveTab('all')}
           hasTVPreferredFocus={true}
         >
-          <Text style={[
-            styles.tabText,
-            activeTab === 'all' && styles.tabTextActive,
-          ]}>
+          <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
             Toutes les chaînes
           </Text>
         </TVFocusable>
 
         <TVFocusable
-          style={[
-            styles.tab,
-            activeTab === 'favorites' && styles.tabActive,
-          ]}
+          style={[styles.tab, activeTab === 'favorites' && styles.tabActive]}
           onPress={() => setActiveTab('favorites')}
         >
           <Ionicons
@@ -334,10 +466,7 @@ export default function LiveTVScreen() {
             color={activeTab === 'favorites' ? '#E50914' : '#666'}
             style={{ marginRight: 8 }}
           />
-          <Text style={[
-            styles.tabText,
-            activeTab === 'favorites' && styles.tabTextActive,
-          ]}>
+          <Text style={[styles.tabText, activeTab === 'favorites' && styles.tabTextActive]}>
             Ma Liste TV ({favorites.length})
           </Text>
         </TVFocusable>
@@ -398,8 +527,8 @@ export default function LiveTVScreen() {
             </View>
           ) : (
             <FlatList
-              data={filteredStreams}
-              keyExtractor={(item) => item.stream_id.toString()}
+              data={filteredChannels}
+              keyExtractor={(item, index) => `${item.baseName}-${index}`}
               renderItem={renderChannelCard}
               numColumns={Platform.isTV ? 4 : 2}
               contentContainerStyle={styles.channelsList}
@@ -426,7 +555,7 @@ export default function LiveTVScreen() {
             <FlatList
               data={favorites}
               keyExtractor={(item) => item.stream_id}
-              renderItem={renderChannelCard}
+              renderItem={renderFavoriteCard}
               numColumns={Platform.isTV ? 4 : 2}
               contentContainerStyle={styles.channelsList}
               showsVerticalScrollIndicator={false}
@@ -434,6 +563,60 @@ export default function LiveTVScreen() {
           )}
         </View>
       )}
+
+      {/* Modal de sélection de qualité */}
+      <Modal
+        visible={showQualityModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQualityModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedChannel?.baseName}
+              </Text>
+              <TVFocusable
+                style={styles.modalCloseButton}
+                onPress={() => setShowQualityModal(false)}
+              >
+                <Ionicons name="close" size={Platform.isTV ? 32 : 24} color="#fff" />
+              </TVFocusable>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Choisissez la qualité
+            </Text>
+
+            <ScrollView style={styles.modalQualityList}>
+              {selectedChannel?.streams.map((stream, index) => (
+                <TVFocusable
+                  key={stream.stream_id}
+                  style={styles.qualityOption}
+                  onPress={() => handlePlayStream(stream)}
+                  hasTVPreferredFocus={index === 0}
+                >
+                  <View style={styles.qualityOptionLeft}>
+                    <View style={[
+                      styles.qualityBadgeLarge,
+                      { backgroundColor: index === 0 ? '#E50914' : '#333' }
+                    ]}>
+                      <Text style={styles.qualityBadgeLargeText}>
+                        {getQualityLabel(stream.name)}
+                      </Text>
+                    </View>
+                    <Text style={styles.qualityOptionText}>
+                      {stream.name}
+                    </Text>
+                  </View>
+                  <Ionicons name="play-circle" size={Platform.isTV ? 36 : 28} color="#E50914" />
+                </TVFocusable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -613,6 +796,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.5,
   },
+  qualityBadge: {
+    position: 'absolute',
+    top: Platform.isTV ? 12 : 8,
+    left: Platform.isTV ? 12 : 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 170, 19, 0.9)',
+    paddingHorizontal: Platform.isTV ? 10 : 6,
+    paddingVertical: Platform.isTV ? 6 : 4,
+    borderRadius: 4,
+    gap: Platform.isTV ? 4 : 3,
+  },
+  qualityBadgeText: {
+    fontSize: Platform.isTV ? 14 : 10,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   favoriteButton: {
     position: 'absolute',
     bottom: Platform.isTV ? 12 : 8,
@@ -644,5 +844,76 @@ const styles = StyleSheet.create({
     fontSize: Platform.isTV ? 20 : 14,
     color: '#666',
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: Platform.isTV ? '60%' : '90%',
+    maxHeight: Platform.isTV ? '80%' : '70%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: Platform.isTV ? 30 : 20,
+    borderWidth: 2,
+    borderColor: '#E50914',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Platform.isTV ? 20 : 15,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: Platform.isTV ? 32 : 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  modalCloseButton: {
+    padding: Platform.isTV ? 10 : 8,
+  },
+  modalSubtitle: {
+    fontSize: Platform.isTV ? 20 : 16,
+    color: '#ccc',
+    marginBottom: Platform.isTV ? 25 : 20,
+  },
+  modalQualityList: {
+    maxHeight: Platform.isTV ? 500 : 400,
+  },
+  qualityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Platform.isTV ? 20 : 15,
+    marginBottom: Platform.isTV ? 15 : 10,
+    backgroundColor: '#252525',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  qualityOptionLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Platform.isTV ? 20 : 15,
+  },
+  qualityBadgeLarge: {
+    paddingHorizontal: Platform.isTV ? 16 : 12,
+    paddingVertical: Platform.isTV ? 10 : 8,
+    borderRadius: 8,
+  },
+  qualityBadgeLargeText: {
+    fontSize: Platform.isTV ? 18 : 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  qualityOptionText: {
+    flex: 1,
+    fontSize: Platform.isTV ? 20 : 16,
+    color: '#fff',
+    fontWeight: '500',
   },
 });
