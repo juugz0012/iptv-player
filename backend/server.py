@@ -966,6 +966,109 @@ async def get_stream_url(stream_type: str, stream_id: str, extension: str = "m3u
     
     return {"url": url}
 
+@api_router.get("/xtream/epg/{stream_id}")
+async def get_epg_for_stream(stream_id: str):
+    """Get EPG (Electronic Program Guide) for a specific stream"""
+    config = await get_xtream_config()
+    
+    try:
+        import cloudscraper
+        from datetime import datetime, timedelta
+        
+        # EPG endpoint from Xtream
+        url = f"{config['dns_url']}/xmltv.php"
+        params = {
+            "username": config["username"],
+            "password": config["password"],
+        }
+        
+        scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'mobile': False
+            }
+        )
+        
+        # Get EPG XML
+        response = scraper.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        
+        # Parse XML to find programs for this stream
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(response.content)
+        
+        # Find channel by stream_id
+        channel_id = None
+        for channel in root.findall('.//channel'):
+            if stream_id in channel.get('id', ''):
+                channel_id = channel.get('id')
+                break
+        
+        if not channel_id:
+            return {"current": None, "next": None}
+        
+        # Get current time
+        now = datetime.utcnow()
+        
+        # Find current and next programs
+        current_program = None
+        next_program = None
+        
+        for programme in root.findall('.//programme'):
+            if programme.get('channel') != channel_id:
+                continue
+            
+            # Parse start and stop times (format: YYYYMMDDHHmmss +0000)
+            start_str = programme.get('start', '').split()[0]
+            stop_str = programme.get('stop', '').split()[0]
+            
+            try:
+                start_time = datetime.strptime(start_str, '%Y%m%d%H%M%S')
+                stop_time = datetime.strptime(stop_str, '%Y%m%d%H%M%S')
+                
+                # Check if program is current
+                if start_time <= now < stop_time:
+                    title_elem = programme.find('title')
+                    desc_elem = programme.find('desc')
+                    
+                    current_program = {
+                        "title": title_elem.text if title_elem is not None else "Programme en cours",
+                        "description": desc_elem.text if desc_elem is not None else "",
+                        "start": start_time.strftime('%H:%M'),
+                        "end": stop_time.strftime('%H:%M'),
+                        "progress": int(((now - start_time).total_seconds() / (stop_time - start_time).total_seconds()) * 100)
+                    }
+                
+                # Check if program is next
+                elif start_time > now and next_program is None:
+                    title_elem = programme.find('title')
+                    desc_elem = programme.find('desc')
+                    
+                    next_program = {
+                        "title": title_elem.text if title_elem is not None else "Programme suivant",
+                        "description": desc_elem.text if desc_elem is not None else "",
+                        "start": start_time.strftime('%H:%M'),
+                        "end": stop_time.strftime('%H:%M')
+                    }
+                    
+                # Stop if we found both
+                if current_program and next_program:
+                    break
+                    
+            except (ValueError, AttributeError) as e:
+                logger.error(f"Error parsing EPG time: {e}")
+                continue
+        
+        return {
+            "current": current_program,
+            "next": next_program
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching EPG: {e}")
+        return {"current": None, "next": None}
+
 # ==================== MAIN APP CONFIGURATION ====================
 
 @api_router.get("/")
