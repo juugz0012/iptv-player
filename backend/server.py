@@ -265,9 +265,64 @@ async def create_user_with_xtream(config: XtreamConfig, max_profiles: int = 5):
         }
     }
 
+@api_router.post("/admin/verify-xtream")
+async def verify_xtream_connection(input: UserCodeCreate):
+    """Admin: Verify Xtream connection and return account info"""
+    try:
+        verify_url = f"{input.dns_url.strip()}/player_api.php"
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                verify_url,
+                params={
+                    "username": input.xtream_username.strip(),
+                    "password": input.xtream_password.strip()
+                },
+                headers={
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15"
+                }
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"Erreur HTTP {response.status_code}: Identifiants invalides ou DNS incorrect")
+            
+            data = response.json()
+            user_info = data.get("user_info")
+            
+            if not user_info:
+                raise HTTPException(status_code=400, detail="Impossible de récupérer les informations du compte")
+            
+            # Format expiration date
+            exp_timestamp = user_info.get("exp_date")
+            exp_date_str = "Inconnue"
+            if exp_timestamp:
+                try:
+                    exp_date = datetime.fromtimestamp(int(exp_timestamp))
+                    exp_date_str = exp_date.strftime("%d/%m/%Y %H:%M")
+                except:
+                    pass
+            
+            return {
+                "success": True,
+                "user_info": {
+                    "username": user_info.get("username"),
+                    "status": user_info.get("status"),
+                    "expiration_date": exp_date_str,
+                    "max_connections": user_info.get("max_connections"),
+                    "active_connections": user_info.get("active_cons")
+                }
+            }
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=408, detail="Timeout: Le serveur IPTV ne répond pas. Vérifiez le DNS.")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=400, detail=f"Erreur de connexion: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error verifying Xtream: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la vérification: {str(e)}")
+
 @api_router.post("/admin/user-codes")
 async def create_user_code_admin(input: UserCodeCreate):
-    """Admin: Generate a new user code with Xtream credentials"""
+    """Admin: Generate a new user code with Xtream credentials (without verification)"""
     # Generate unique code
     while True:
         code = generate_user_code()
