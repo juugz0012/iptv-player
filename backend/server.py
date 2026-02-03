@@ -96,6 +96,15 @@ class WatchlistAdd(BaseModel):
     stream_type: str
     movie_data: Dict[str, Any]
 
+class AdminNotification(BaseModel):
+    message: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AdminNotificationCreate(BaseModel):
+    message: str
+
 class WatchProgress(BaseModel):
     user_code: str
     profile_name: str
