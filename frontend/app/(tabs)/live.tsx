@@ -292,7 +292,7 @@ export default function LiveTVScreen() {
             name: stream.name || 'Chaîne inconnue',
             stream_icon: stream.stream_icon || '',
             num: stream.num || 0,
-            category_id: stream.category_id || '',
+            category_id: stream.category_id ? stream.category_id.toString() : '',
           },
         };
         console.log('📤 Sending watchlist data:', JSON.stringify(watchlistData));
@@ -303,7 +303,7 @@ export default function LiveTVScreen() {
     } catch (error: any) {
       console.error('❌ Error toggling favorite:', error);
       console.error('❌ Error details:', error.response?.data);
-      Alert.alert('Erreur', error.response?.data?.detail || 'Impossible de modifier les favoris');
+      Alert.alert('Erreur', error.response?.data?.detail?.[0]?.msg || 'Impossible de modifier les favoris');
     }
   };
 
