@@ -7,27 +7,10 @@ import TVFocusable from './TVFocusable';
 export default function NotificationBanner() {
   const [notification, setNotification] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(-100)).current;
 
   useEffect(() => {
     loadNotification();
   }, []);
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        friction: 8,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: -100,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible]);
 
   const loadNotification = async () => {
     try {
@@ -48,14 +31,7 @@ export default function NotificationBanner() {
   if (!notification || !visible) return null;
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
+    <View style={styles.container}>
       <View style={styles.content}>
         <Ionicons
           name="information-circle"
@@ -74,7 +50,7 @@ export default function NotificationBanner() {
           />
         </TVFocusable>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
