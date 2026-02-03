@@ -170,14 +170,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Bienvenue sur IPTV Player</Text>
-          <Text style={styles.heroSubtitle}>
-            Profitez de milliers de chaînes, films et séries
-          </Text>
-        </View>
-
-        {/* Barre de notification - Après "Bienvenue" */}
+        {/* Barre de notification - Après le header */}
         <NotificationBanner />
 
         {/* Bouton Charger Playlist */}
