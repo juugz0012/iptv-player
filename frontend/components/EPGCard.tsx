@@ -35,10 +35,12 @@ export default function EPGCard({ streamId, compact = false }: EPGCardProps) {
   const loadEPG = async () => {
     try {
       setLoading(true);
+      console.log('📡 Loading EPG for stream:', streamId);
       const response = await xtreamAPI.getEPG(streamId);
+      console.log('📡 EPG response:', JSON.stringify(response.data));
       setEpg(response.data);
-    } catch (error) {
-      console.log('EPG non disponible pour', streamId);
+    } catch (error: any) {
+      console.log('❌ EPG error for', streamId, ':', error.message);
       setEpg({ current: null, next: null });
     } finally {
       setLoading(false);
@@ -46,14 +48,11 @@ export default function EPGCard({ streamId, compact = false }: EPGCardProps) {
   };
 
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="small" color="#E50914" />
-      </View>
-    );
+    return null; // Pas de loader pour ne pas ralentir l'affichage
   }
 
   if (!epg || !epg.current) {
+    // Pas d'EPG disponible, ne rien afficher
     return null;
   }
 
