@@ -112,49 +112,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Platform.isTV ? 60 : 20, // Plus d'espace pour TV
   },
   logo: {
-    fontSize: 48,
+    fontSize: Platform.isTV ? 72 : 48, // Plus grand pour TV
     fontWeight: 'bold',
     color: '#E50914',
-    marginBottom: 10,
+    marginBottom: Platform.isTV ? 20 : 10,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: Platform.isTV ? 28 : 18, // Plus grand pour TV
     color: '#fff',
-    marginBottom: 40,
+    marginBottom: Platform.isTV ? 60 : 40,
   },
   input: {
     width: '100%',
-    maxWidth: 400,
-    height: 56,
+    maxWidth: Platform.isTV ? 600 : 400, // Plus large pour TV
+    height: Platform.isTV ? 80 : 56, // Plus haut pour TV
     backgroundColor: '#333',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    borderRadius: 12,
+    paddingHorizontal: 30,
+    fontSize: Platform.isTV ? 28 : 16, // Texte plus grand pour TV
     color: '#fff',
-    marginBottom: 20,
-    borderWidth: 1,
+    marginBottom: 30,
+    borderWidth: 2,
     borderColor: '#444',
   },
   button: {
     width: '100%',
-    maxWidth: 400,
-    height: 56,
+    maxWidth: Platform.isTV ? 600 : 400,
+    height: Platform.isTV ? 80 : 56,
     backgroundColor: '#E50914',
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: Platform.isTV ? 24 : 16,
     fontWeight: 'bold',
+    letterSpacing: 1,
   },
   adminButton: {
     marginTop: 20,
