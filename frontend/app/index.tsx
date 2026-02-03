@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../utils/api';
+import TVFocusable from '../components/TVFocusable';
 
 export default function LoginScreen() {
   const [code, setCode] = useState('');
