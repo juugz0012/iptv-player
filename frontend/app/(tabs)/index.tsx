@@ -304,6 +304,56 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Section "Ma Liste TV" - Chaînes favorites */}
+        {!loadingWatchlist && tvWatchlist.length > 0 && (
+          <View style={styles.watchlistSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="radio" size={24} color="#E50914" />
+              <Text style={styles.sectionTitle}>Ma Liste TV</Text>
+            </View>
+            
+            <FlatList
+              horizontal
+              data={tvWatchlist}
+              keyExtractor={(item) => item.stream_id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.watchlistItem}
+                  onPress={() => router.push({
+                    pathname: '/player',
+                    params: {
+                      streamId: item.stream_id,
+                      streamType: 'live',
+                      streamName: item.movie_data.name,
+                    },
+                  })}
+                >
+                  {item.movie_data.stream_icon ? (
+                    <Image
+                      source={{ uri: item.movie_data.stream_icon }}
+                      style={styles.watchlistPoster}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={[styles.watchlistPoster, styles.watchlistPosterPlaceholder]}>
+                      <Ionicons name="tv" size={32} color="#666" />
+                    </View>
+                  )}
+                  <Text style={styles.watchlistTitle} numberOfLines={2}>
+                    {item.movie_data.name}
+                  </Text>
+                  <View style={styles.liveBadge}>
+                    <View style={styles.liveIndicator} />
+                    <Text style={styles.liveText}>LIVE</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.watchlistContent}
+            />
+          </View>
+        )}
+
         <View style={styles.categoriesContainer}>
           {categories.map((category, index) => (
             <TouchableOpacity
