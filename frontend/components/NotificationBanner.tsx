@@ -80,14 +80,11 @@ export default function NotificationBanner() {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#1a1a1a',
     borderBottomWidth: 2,
     borderBottomColor: '#E50914',
-    zIndex: 1000,
+    marginBottom: Platform.isTV ? 15 : 10,
+  },
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
