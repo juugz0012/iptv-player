@@ -2,7 +2,7 @@
 import requests
 import json
 
-BASE_URL = "https://streamy-154.preview.emergentagent.com/api"
+BASE_URL = "https://netflixiptv-2.preview.emergentagent.com/api"
 
 # Test the specific failing cases
 print("Testing specific failing cases...")

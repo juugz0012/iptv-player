@@ -42,12 +42,12 @@ Toutes ces fonctions appellent directement le serveur Xtream :
 ## 🧪 COMMENT TESTER
 
 ### **Option 1 : Page de Test Dédiée**
-1. Ouvrez l'URL : `https://streamy-154.preview.emergentagent.com/test-api`
+1. Ouvrez l'URL : `https://netflixiptv-2.preview.emergentagent.com/test-api`
 2. Cliquez sur "Lancer les Tests"
 3. Vérifiez les résultats en temps réel
 
 ### **Option 2 : Onglet Live TV**
-1. Ouvrez l'URL : `https://streamy-154.preview.emergentagent.com`
+1. Ouvrez l'URL : `https://netflixiptv-2.preview.emergentagent.com`
 2. Connectez-vous avec un code utilisateur (ou créez-en un via `/admin`)
 3. Sélectionnez un profil
 4. Allez dans l'onglet "Live TV"
@@ -64,7 +64,7 @@ Les identifiants configurés dans le panel admin sont :
 - **Username** : `GYNRNT4N`
 - **Password** : `WL29K25J`
 
-Pour les modifier, allez sur : `https://streamy-154.preview.emergentagent.com/admin`
+Pour les modifier, allez sur : `https://netflixiptv-2.preview.emergentagent.com/admin`
 
 ## 🔍 RÉSULTATS DU TEST BACKEND
 
@@ -120,9 +120,9 @@ Une fois que vous confirmez que **les chaînes se chargent** :
 
 ## 🔗 LIENS UTILES
 
-- **App Web** : https://streamy-154.preview.emergentagent.com
-- **Page Test** : https://streamy-154.preview.emergentagent.com/test-api
-- **Panel Admin** : https://streamy-154.preview.emergentagent.com/admin
+- **App Web** : https://netflixiptv-2.preview.emergentagent.com
+- **Page Test** : https://netflixiptv-2.preview.emergentagent.com/test-api
+- **Panel Admin** : https://netflixiptv-2.preview.emergentagent.com/admin
 
 ---
 
