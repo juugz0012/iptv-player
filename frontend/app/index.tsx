@@ -79,24 +79,25 @@ export default function LoginScreen() {
           editable={!loading}
         />
 
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
+          hasTVPreferredFocus={true}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>SE CONNECTER</Text>
           )}
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity
+        <TVFocusable
           style={styles.adminButton}
           onPress={goToAdmin}
         >
           <Text style={styles.adminButtonText}>Panneau Admin</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
     </KeyboardAvoidingView>
   );
