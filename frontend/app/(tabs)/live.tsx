@@ -283,20 +283,20 @@ export default function LiveTVScreen() {
         await watchlistAPI.removeFromWatchlist(userCode, currentProfile.name, stream.stream_id.toString());
         Alert.alert('✅', 'Retiré de Ma Liste TV');
       } else {
-        const watchlistData = {
-          user_code: userCode,
-          profile_name: currentProfile.name,
-          stream_id: stream.stream_id.toString(),
-          stream_type: 'live_tv',
-          movie_data: {
-            name: stream.name || 'Chaîne inconnue',
-            stream_icon: stream.stream_icon || '',
-            num: stream.num || 0,
-            category_id: stream.category_id ? stream.category_id.toString() : '',
-          },
+        const movieData = {
+          name: stream.name || 'Chaîne inconnue',
+          stream_icon: stream.stream_icon || '',
+          num: stream.num || 0,
+          category_id: stream.category_id ? stream.category_id.toString() : '',
         };
-        console.log('📤 Sending watchlist data:', JSON.stringify(watchlistData));
-        await watchlistAPI.addToWatchlist(watchlistData);
+        
+        await watchlistAPI.addToWatchlist(
+          userCode,
+          currentProfile.name,
+          stream.stream_id.toString(),
+          'live_tv',
+          movieData
+        );
         Alert.alert('✅', 'Ajouté à Ma Liste TV');
       }
       await loadFavorites();
