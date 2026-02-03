@@ -21,10 +21,11 @@ import { xtreamAPI, watchlistAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import TVFocusable from '../../components/TVFocusable';
 import LoadingScreen from '../../components/LoadingScreen';
+import EPGCard from '../../components/EPGCard';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = Platform.isTV ? 280 : 160;
-const CARD_HEIGHT = Platform.isTV ? 180 : 120;
+const CARD_HEIGHT = Platform.isTV ? 220 : 160; // Augmenté pour l'EPG
 
 interface Category {
   category_id: string;
