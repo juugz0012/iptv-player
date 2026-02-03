@@ -577,4 +577,28 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontWeight: '600',
   },
+  liveBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(229, 9, 20, 0.9)',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+  liveIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  liveText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
 });
