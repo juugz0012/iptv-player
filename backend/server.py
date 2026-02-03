@@ -85,7 +85,7 @@ class WatchlistItem(BaseModel):
     user_code: str
     profile_name: str
     stream_id: str
-    stream_type: str  # 'movie' or 'series'
+    stream_type: str  # 'movie', 'series', or 'live_tv'
     movie_data: Dict[str, Any]
     added_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -93,7 +93,7 @@ class WatchlistAdd(BaseModel):
     user_code: str
     profile_name: str
     stream_id: str
-    stream_type: str
+    stream_type: str  # 'movie', 'series', or 'live_tv'
     movie_data: Dict[str, Any]
 
 class AdminNotification(BaseModel):
