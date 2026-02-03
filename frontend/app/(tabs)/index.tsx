@@ -157,9 +157,6 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       
-      {/* Barre de notification */}
-      <NotificationBanner />
-      
       <View style={styles.header}>
         <Text style={styles.logo}>IPTV Player</Text>
         <View style={styles.profileInfo}>
@@ -179,6 +176,9 @@ export default function HomeScreen() {
             Profitez de milliers de chaînes, films et séries
           </Text>
         </View>
+
+        {/* Barre de notification - Après "Bienvenue" */}
+        <NotificationBanner />
 
         {/* Bouton Charger Playlist */}
         <View style={styles.loadPlaylistSection}>
