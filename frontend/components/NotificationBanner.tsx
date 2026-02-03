@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#E50914',
     marginBottom: Platform.isTV ? 15 : 10,
-  },
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
