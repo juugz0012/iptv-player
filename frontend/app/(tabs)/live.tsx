@@ -70,12 +70,14 @@ export default function LiveTVScreen() {
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState<GroupedChannel | null>(null);
   const [showQualityModal, setShowQualityModal] = useState(false);
+  const [xtreamConfig, setXtreamConfig] = useState<any>(null);
   
   const router = useRouter();
   const { currentProfile, userCode } = useAuth();
   const streamsCache = useRef<Stream[]>([]);
 
   useEffect(() => {
+    loadXtreamConfig();
     loadData();
   }, []);
 
