@@ -283,24 +283,27 @@ export default function LiveTVScreen() {
         await watchlistAPI.removeFromWatchlist(userCode, currentProfile.name, stream.stream_id.toString());
         Alert.alert('✅', 'Retiré de Ma Liste TV');
       } else {
-        await watchlistAPI.addToWatchlist({
+        const watchlistData = {
           user_code: userCode,
           profile_name: currentProfile.name,
           stream_id: stream.stream_id.toString(),
           stream_type: 'live_tv',
           movie_data: {
-            name: stream.name,
-            stream_icon: stream.stream_icon,
-            num: stream.num,
-            category_id: stream.category_id,
+            name: stream.name || 'Chaîne inconnue',
+            stream_icon: stream.stream_icon || '',
+            num: stream.num || 0,
+            category_id: stream.category_id || '',
           },
-        });
+        };
+        console.log('📤 Sending watchlist data:', JSON.stringify(watchlistData));
+        await watchlistAPI.addToWatchlist(watchlistData);
         Alert.alert('✅', 'Ajouté à Ma Liste TV');
       }
       await loadFavorites();
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      Alert.alert('Erreur', 'Impossible de modifier les favoris');
+    } catch (error: any) {
+      console.error('❌ Error toggling favorite:', error);
+      console.error('❌ Error details:', error.response?.data);
+      Alert.alert('Erreur', error.response?.data?.detail || 'Impossible de modifier les favoris');
     }
   };
 
